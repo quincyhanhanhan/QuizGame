@@ -1,0 +1,5 @@
+{
+  "name": "DetectiveOS: 虚拟警局档案",
+  "description": "一个沉浸式解谜游戏，玩家操作虚拟警局数据库系统，搜查嫌疑人档案、分析证物并利用 AI 助手破案。",
+  "requestFramePermissions": []
+}
