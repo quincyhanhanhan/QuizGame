@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   DatabaseRecord, 
   Page, 
@@ -21,6 +21,7 @@ const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" 
 const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>;
 const HelpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 111.731-1A3 3 0 0013 8a3.001 3.001 0 00-2 2.855V11a1 1 0 11-2 0v-.145c.001-1.625 1.126-2.954 2.767-2.999.044-.001.088-.006.133-.006zM10 15a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>;
 const PowerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" /></svg>;
+const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>;
 
 enum SidebarFilter {
   ALL = '全部',
@@ -34,27 +35,27 @@ const GUIDE_STEPS = [
   {
     title: "系统概览",
     icon: <DatabaseIcon />,
-    content: "欢迎使用天网档案系统。你的目标是通过检索数据库，还原案件真相。界面左侧是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
+    content: "欢迎使用天网档案系统。你的目标是通过检索数据库，还原案件真相。界面左侧（手机端为列表页）是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
   },
   {
     title: "关键词检索",
     icon: <SearchIcon />,
-    content: "在上方输入框输入关键词来检索。系统会检查所有【已解锁】档案的正文和口供。只有当关键词在现有线索中被提及时，或者满足前置逻辑，新的档案才会被解锁。"
+    content: "在输入框输入关键词检索。系统会检查所有【已解锁】档案。只有当关键词在现有线索中被提及时，或者满足前置逻辑，新的档案才会被解锁。"
   },
   {
     title: "动态证词",
     icon: <ChatIcon />,
-    content: "嫌疑人的口供不是一成不变的。当你获得关键证据后，相关人物的档案会【更新】，解锁新的【关联询问】。请留意侧边栏的 NEW DATA 标记和高亮提示。"
+    content: "嫌疑人的口供不是一成不变的。当你获得关键证据后，相关人物的档案会【更新】，解锁新的【关联询问】。请留意 NEW DATA 标记。"
   },
   {
     title: "辅助功能",
     icon: <SparklesIcon />,
-    content: "卡关了吗？点击指令栏右侧的【AI 分析】获取模糊提示。你也可以点击侧边栏顶部的标签来筛选显示，理清复杂的线索关系。"
+    content: "卡关了吗？点击【AI 分析】获取模糊提示。你也可以利用标签筛选显示，理清复杂的线索关系。"
   },
   {
     title: "最终结案",
     icon: <AlertIcon />,
-    content: "当你理清了凶手、关键定罪证据和作案动机后，点击右上角的【结案通道】。将任意已解锁的档案拖入三个槽位中。只有逻辑完全闭环才能成功结案。"
+    content: "当你理清真相后，进入【结案通道】。将档案拖入（手机端点击槽位选择）三个槽位中。只有逻辑完全闭环才能成功结案。"
   }
 ];
 
@@ -90,18 +91,18 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
             }}>
        </div>
 
-       <div className="z-10 w-full max-w-2xl bg-slate-900/80 border border-police-500/50 rounded-lg p-10 shadow-[0_0_100px_rgba(14,165,233,0.15)] backdrop-blur-md relative">
+       <div className="z-10 w-full max-w-2xl bg-slate-900/80 border border-police-500/50 rounded-lg p-6 md:p-10 shadow-[0_0_100px_rgba(14,165,233,0.15)] backdrop-blur-md relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-police-500 to-transparent"></div>
           
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-white mb-2 tracking-tighter">DetectiveOS</h1>
-            <p className="text-police-500 text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
+          <div className="text-center mb-10 md:mb-12">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">DetectiveOS</h1>
+            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
           </div>
 
           <div className="space-y-6">
             <div>
               <label className="block text-xs text-slate-500 mb-2 uppercase tracking-widest"> Manual Override / Case Search</label>
-              <div className="flex gap-2">
+              <div className="flex flex-col md:flex-row gap-2">
                 <input 
                   type="text" 
                   value={inputId}
@@ -115,7 +116,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
                 />
                 <button 
                   onClick={() => handleConnect(inputId)}
-                  className="bg-police-900 hover:bg-police-800 text-police-100 border border-police-700 px-8 font-bold transition-colors"
+                  className="bg-police-900 hover:bg-police-800 text-police-100 border border-police-700 px-8 py-4 md:py-0 font-bold transition-colors"
                 >
                   CONNECT
                 </button>
@@ -135,11 +136,11 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
                     onClick={() => handleConnect(c.id)}
                     className="flex items-center justify-between p-4 border border-slate-800 hover:border-police-500 hover:bg-police-900/20 bg-black/50 transition-all group text-left"
                    >
-                     <div>
-                       <div className="text-police-400 font-bold text-sm group-hover:text-white transition-colors">{c.id}</div>
-                       <div className="text-slate-400 text-xs mt-1">{c.title}</div>
+                     <div className="overflow-hidden">
+                       <div className="text-police-400 font-bold text-sm group-hover:text-white transition-colors truncate">{c.id}</div>
+                       <div className="text-slate-400 text-xs mt-1 truncate">{c.title}</div>
                      </div>
-                     <div className="opacity-0 group-hover:opacity-100 transition-opacity text-police-500">
+                     <div className="opacity-0 group-hover:opacity-100 transition-opacity text-police-500 shrink-0 pl-2">
                         ACCESS {'>'}
                      </div>
                    </button>
@@ -173,10 +174,14 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     RECORDS.filter(r => r.isInitial).map(r => r.id)
   );
   
-  // Tabs State
+  // Tabs State (Desktop mainly, Mobile uses conditional rendering)
   const [tabs, setTabs] = useState<string[]>([INITIAL_RECORD.id]);
   const [activeTabId, setActiveTabId] = useState<string>(INITIAL_RECORD.id);
   const [sidebarFilter, setSidebarFilter] = useState<SidebarFilter>(SidebarFilter.ALL);
+  
+  // Mobile specific state
+  const [mobileViewMode, setMobileViewMode] = useState<'list' | 'reader'>('list');
+  const [selectingSlotId, setSelectingSlotId] = useState<string | null>(null); // For Accusation modal
   
   // Read State Tracking
   const [viewedState, setViewedState] = useState<Record<string, number>>({
@@ -280,7 +285,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     );
 
     if (potentialMatches.length === 0) {
-      setErrorMsg("系统未找到该关键词的相关档案");
+      setErrorMsg("未找到相关档案");
       return;
     }
 
@@ -308,7 +313,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     });
 
     if (accessibleMatches.length === 0) {
-      setErrorMsg("权限不足：系统档案中暂无此前置线索记录");
+      setErrorMsg("权限不足：暂无前置线索");
       return;
     }
 
@@ -316,7 +321,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
     if (newUnlocks.length > 0) {
       setUnlockedRecordIds(prev => [...prev, ...newUnlocks.map(u => u.id)]);
-      setNotification(`检索成功：解密 ${newUnlocks.length} 份新档案 (请查看侧边栏)`);
+      setNotification(`检索成功：解密 ${newUnlocks.length} 份新档案`);
       setTimeout(() => setNotification(null), 4000);
       setSearchQuery('');
     } else {
@@ -338,17 +343,19 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
   const openRecord = (recordId: string) => {
     markRecordAsRead(recordId);
-    if (tabs.includes(recordId)) {
-      setActiveTabId(recordId);
-      return;
+    
+    // Desktop Tab Logic
+    if (!tabs.includes(recordId)) {
+      if (tabs.length < 3) {
+        setTabs(prev => [...prev, recordId]);
+      } else {
+        setTabs(prev => [...prev.slice(1), recordId]);
+      }
     }
-    if (tabs.length < 3) {
-      setTabs(prev => [...prev, recordId]);
-      setActiveTabId(recordId);
-    } else {
-      setTabs(prev => [...prev.slice(1), recordId]);
-      setActiveTabId(recordId);
-    }
+    setActiveTabId(recordId);
+
+    // Mobile Logic: Switch to reader view
+    setMobileViewMode('reader');
   };
 
   const closeTab = (e: React.MouseEvent, recordId: string) => {
@@ -363,7 +370,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   // --- Hint Logic with Gemini ---
   
   const generateHint = async () => {
-    setHintMessage("正在连接 AI 核心分析数据库...");
+    setHintMessage("AI 正在分析线索...");
     
     // We provide context to the AI about what is unlocked and what is locked but available next
     const currentContext = `
@@ -381,8 +388,9 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     setHintMessage(response);
   };
 
-  // --- Drag and Drop Logic ---
+  // --- Accusation Logic ---
 
+  // Desktop D&D
   const handleRecordDragStart = (e: React.DragEvent, recordId: string) => {
     e.dataTransfer.setData("recordId", recordId);
   };
@@ -390,7 +398,15 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   const handleSlotDrop = (e: React.DragEvent, slotId: string) => {
     e.preventDefault();
     const recordId = e.dataTransfer.getData("recordId");
-    
+    assignRecordToSlot(slotId, recordId);
+  };
+
+  // Mobile/Click Interaction
+  const handleSlotClick = (slotId: string) => {
+    setSelectingSlotId(slotId);
+  };
+
+  const assignRecordToSlot = (slotId: string, recordId: string) => {
     setSlots(prev => prev.map(slot => {
       if (slot.id === slotId) {
         const record = RECORDS.find(r => r.id === recordId);
@@ -402,7 +418,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     }));
   };
 
-  const clearSlot = (slotId: string) => {
+  const clearSlot = (e: React.MouseEvent, slotId: string) => {
+    e.stopPropagation();
     setSlots(prev => prev.map(slot => slot.id === slotId ? { ...slot, filledRecordId: null } : slot));
   };
 
@@ -412,7 +429,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     const motive = slots.find(s => s.id === 'motive')?.filledRecordId;
 
     if (!culprit || !evidence || !motive) {
-      setResultMessage("系统驳回：必须填写完整的证据链（凶手+铁证+动机）。");
+      setResultMessage("系统驳回：请完整填写证据链（凶手+铁证+动机）。");
       return;
     }
 
@@ -501,6 +518,45 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     )
   }
 
+  // Mobile Record Selection Modal for Accusation
+  const renderRecordSelectModal = () => {
+    if (!selectingSlotId) return null;
+    const slot = slots.find(s => s.id === selectingSlotId);
+    if (!slot) return null;
+
+    const validRecords = getUnlockedRecords().filter(r => slot.acceptedTypes.includes(r.type));
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+        <div className="bg-slate-900 border border-police-500/50 w-full max-w-md rounded-lg flex flex-col max-h-[80vh]">
+          <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-lg">
+            <h3 className="text-white font-bold">选择: {slot.label}</h3>
+            <button onClick={() => setSelectingSlotId(null)} className="text-slate-500 hover:text-white"><XIcon /></button>
+          </div>
+          <div className="overflow-y-auto p-2 custom-scrollbar flex-1">
+            {validRecords.length === 0 ? (
+               <div className="text-center py-8 text-slate-500 text-sm">暂无符合该类型的线索</div>
+            ) : (
+               validRecords.map(r => (
+                 <div 
+                   key={r.id} 
+                   onClick={() => {
+                     assignRecordToSlot(selectingSlotId, r.id);
+                     setSelectingSlotId(null);
+                   }}
+                   className={`p-3 mb-2 rounded border cursor-pointer hover:bg-slate-800 transition-colors ${getRecordColor(r.type, true)}`}
+                 >
+                    <div className="font-bold">{r.title}</div>
+                    <div className="text-xs opacity-70 mt-1">{r.id}</div>
+                 </div>
+               ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDatabase = () => {
     const activeRecord = RECORDS.find(r => r.id === activeTabId);
 
@@ -515,22 +571,30 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
         return 0; 
     });
 
+    const isListHiddenOnMobile = mobileViewMode === 'reader';
+    const isReaderHiddenOnMobile = mobileViewMode === 'list';
+
     return (
       <div className="flex flex-col h-full gap-4 relative">
         {notification && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 animate-slideDown bg-police-500 text-black font-bold px-6 py-2 rounded shadow-[0_0_20px_rgba(14,165,233,0.6)] z-50 pointer-events-none whitespace-nowrap">
+          <div className="absolute top-16 md:top-20 left-1/2 transform -translate-x-1/2 animate-slideDown bg-police-500 text-black font-bold px-4 md:px-6 py-2 rounded shadow-[0_0_20px_rgba(14,165,233,0.6)] z-50 pointer-events-none whitespace-nowrap text-sm md:text-base">
             {notification}
           </div>
         )}
         {errorMsg && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 animate-shake bg-red-600 text-white font-bold px-6 py-2 rounded shadow-[0_0_20px_rgba(220,38,38,0.6)] z-50">
+          <div className="absolute top-16 md:top-20 left-1/2 transform -translate-x-1/2 animate-shake bg-red-600 text-white font-bold px-4 md:px-6 py-2 rounded shadow-[0_0_20px_rgba(220,38,38,0.6)] z-50 text-sm md:text-base">
             {errorMsg}
           </div>
         )}
 
         {/* Command Bar */}
-        <div className="flex gap-4 items-center bg-slate-900 p-4 rounded-lg border border-slate-700 shadow-md">
-          <div className="text-police-500 font-mono font-bold whitespace-nowrap">{'>'} SEARCH_QUERY:</div>
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4 md:items-center bg-slate-900 p-3 md:p-4 rounded-lg border border-slate-700 shadow-md shrink-0">
+          <div className="text-police-500 font-mono font-bold whitespace-nowrap text-xs md:text-base flex justify-between items-center">
+             <span>{'>'} SEARCH:</span>
+             <button onClick={generateHint} className="md:hidden flex items-center gap-1 px-2 py-1 bg-police-900/30 border border-police-700 rounded text-[10px] text-police-300">
+                <SparklesIcon /> AI
+             </button>
+          </div>
           <div className="relative flex-1">
              <input 
               type="text" 
@@ -538,31 +602,34 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               value={searchQuery}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              className="bg-transparent border-none outline-none text-police-100 w-full font-mono placeholder-slate-600 text-lg"
-              autoFocus
+              className="bg-transparent border-none outline-none text-police-100 w-full font-mono placeholder-slate-600 text-base md:text-lg"
             />
           </div>
-          <button onClick={executeSearch} className="p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors">
+          <button onClick={executeSearch} className="hidden md:block p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors">
             <SearchIcon />
           </button>
-          <div className="h-6 w-px bg-slate-700 mx-2"></div>
-          <button onClick={generateHint} className="flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap">
+          <div className="hidden md:block h-6 w-px bg-slate-700 mx-2"></div>
+          <button onClick={generateHint} className="hidden md:flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap">
             <SparklesIcon /> AI 分析
           </button>
         </div>
 
         {/* Hint */}
         {hintMessage && (
-           <div className="bg-police-900/20 border border-police-800 p-2 px-4 rounded text-sm text-police-300 font-mono flex justify-between items-center animate-fadeIn">
-             <span>{hintMessage}</span>
-             <button onClick={() => setHintMessage(null)} className="text-police-500 hover:text-white"><XIcon /></button>
+           <div className="bg-police-900/20 border border-police-800 p-2 px-4 rounded text-sm text-police-300 font-mono flex justify-between items-start md:items-center animate-fadeIn shrink-0">
+             <span className="flex-1 mr-2">{hintMessage}</span>
+             <button onClick={() => setHintMessage(null)} className="text-police-500 hover:text-white mt-0.5 md:mt-0"><XIcon /></button>
            </div>
         )}
 
-        <div className="flex flex-1 gap-4 overflow-hidden">
-          {/* Index Sidebar */}
-          <div className="w-64 bg-slate-950 border border-slate-800 rounded flex flex-col">
-            <div className="flex p-1 bg-slate-900 border-b border-slate-800 gap-0.5 overflow-x-auto no-scrollbar">
+        <div className="flex flex-1 gap-4 overflow-hidden relative">
+          
+          {/* Index Sidebar - Hidden on Mobile when in Reader mode */}
+          <div className={`
+             ${isListHiddenOnMobile ? 'hidden md:flex' : 'flex'}
+             w-full md:w-64 bg-slate-950 border border-slate-800 rounded flex-col shrink-0
+          `}>
+            <div className="flex p-1 bg-slate-900 border-b border-slate-800 gap-0.5 overflow-x-auto no-scrollbar shrink-0">
               {Object.values(SidebarFilter).map(filter => (
                  <button
                    key={filter}
@@ -578,7 +645,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               ))}
             </div>
 
-            <div className="p-2 bg-slate-900/50 border-b border-slate-800 font-bold text-slate-500 text-[10px] tracking-wider flex justify-between">
+            <div className="p-2 bg-slate-900/50 border-b border-slate-800 font-bold text-slate-500 text-[10px] tracking-wider flex justify-between shrink-0">
               <span>INDEX</span>
               <span>COUNT: {sortedList.length}</span>
             </div>
@@ -590,9 +657,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                   <div 
                     key={record.id}
                     onClick={() => openRecord(record.id)}
-                    draggable
-                    onDragStart={(e) => handleRecordDragStart(e, record.id)}
-                    className={`p-2 rounded cursor-pointer border-l-2 transition-all group ${
+                    className={`p-3 md:p-2 rounded cursor-pointer border-l-2 transition-all group ${
                       tabs.includes(record.id)
                       ? 'bg-slate-800 ' + getRecordColor(record.type, isUnread)
                       : 'bg-transparent border-transparent hover:bg-slate-900 ' + (isUnread ? 'text-white' : 'text-slate-500 hover:text-slate-300')
@@ -621,10 +686,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             </div>
           </div>
 
-          {/* Main Viewer */}
-          <div className="flex-1 flex flex-col bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative shadow-2xl">
-            {/* Tabs */}
-            <div className="flex bg-black border-b border-slate-700 h-10 items-end px-2 gap-1 overflow-x-auto">
+          {/* Main Viewer - Hidden on Mobile when in List mode */}
+          <div className={`
+             ${isReaderHiddenOnMobile ? 'hidden md:flex' : 'flex'}
+             flex-1 flex-col bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative shadow-2xl
+          `}>
+            {/* Desktop Tabs */}
+            <div className="hidden md:flex bg-black border-b border-slate-700 h-10 items-end px-2 gap-1 overflow-x-auto shrink-0">
                {tabs.map((tabId) => {
                  const record = RECORDS.find(r => r.id === tabId);
                  if (!record) return null;
@@ -654,14 +722,21 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                })}
             </div>
 
+            {/* Mobile Reader Header */}
+            <div className="md:hidden flex items-center p-2 bg-slate-950 border-b border-slate-800 text-slate-400 shrink-0">
+                 <button onClick={() => setMobileViewMode('list')} className="flex items-center gap-1 text-xs px-2 py-1 hover:text-white">
+                    <BackIcon /> 返回列表
+                 </button>
+            </div>
+
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8 bg-slate-900 custom-scrollbar relative">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-900 custom-scrollbar relative">
               {activeRecord ? (
                 <div className="max-w-4xl mx-auto animate-fadeIn pb-10">
-                  <div className="flex items-start justify-between border-b border-slate-800 pb-6 mb-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-white font-mono mb-2">{activeRecord.title}</h1>
-                      <div className="flex gap-2">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between border-b border-slate-800 pb-6 mb-6 gap-4">
+                    <div className="flex-1">
+                      <h1 className="text-2xl md:text-3xl font-bold text-white font-mono mb-2 leading-tight">{activeRecord.title}</h1>
+                      <div className="flex flex-wrap gap-2">
                         <span className={`text-xs px-2 py-1 rounded font-bold ${getRecordBadgeColor(activeRecord.type)}`}>
                           {getRecordDisplayType(activeRecord.type)}
                         </span>
@@ -674,20 +749,20 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                       </div>
                     </div>
                     {activeRecord.imageUrl && (
-                      <img src={activeRecord.imageUrl} className="w-24 h-24 rounded border border-slate-700 object-cover grayscale opacity-80" />
+                      <img src={activeRecord.imageUrl} className="w-full md:w-24 h-40 md:h-24 rounded border border-slate-700 object-cover grayscale opacity-80" />
                     )}
                   </div>
                   
-                  <div className="prose prose-invert prose-lg max-w-none font-mono">
+                  <div className="prose prose-invert prose-base md:prose-lg max-w-none font-mono">
                      {activeRecord.content.split('\n').map((line, i) => (
-                       <p key={i} className="mb-2 text-slate-300 leading-7">{line}</p>
+                       <p key={i} className="mb-2 text-slate-300 leading-relaxed">{line}</p>
                      ))}
                   </div>
 
                   {/* Dynamic Cross Examination Section */}
                   {activeRecord.crossExamination && (
-                    <div className="mt-12 pt-8 border-t border-slate-800">
-                      <h3 className="text-xl font-bold text-slate-400 mb-4 flex items-center gap-2">
+                    <div className="mt-8 md:mt-12 pt-8 border-t border-slate-800">
+                      <h3 className="text-lg md:text-xl font-bold text-slate-400 mb-4 flex items-center gap-2">
                          <ChatIcon /> 关联询问 / Cross-Examination
                       </h3>
                       <div className="grid gap-4">
@@ -730,15 +805,21 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
   const renderAccusation = () => {
     return (
-        <div className="max-w-5xl mx-auto h-full flex flex-col p-4 animate-fadeIn">
-           <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                 <AlertIcon /> 结案通道 / FINAL ACCUSATION
+        <div className="max-w-5xl mx-auto h-full flex flex-col p-2 md:p-4 animate-fadeIn overflow-y-auto">
+           {renderRecordSelectModal()}
+
+           <div className="text-center mb-6 md:mb-10 mt-4 md:mt-0">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                 <AlertIcon /> 结案通道
               </h2>
-              <p className="text-slate-500 font-mono text-sm tracking-wider">拖入档案至下方槽位以构建证据链 (DRAG & DROP)</p>
+              <p className="text-slate-500 font-mono text-xs md:text-sm tracking-wider">
+                <span className="hidden md:inline">拖入档案至下方槽位</span>
+                <span className="md:hidden">点击下方槽位选择档案</span>
+                 以构建证据链
+              </p>
            </div>
   
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 shrink-0">
               {slots.map(slot => {
                   const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
                   const isCorrectType = !filledRecord || slot.acceptedTypes.includes(filledRecord.type);
@@ -746,10 +827,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                   return (
                       <div 
                          key={slot.id}
+                         // Desktop Drag and Drop
                          onDrop={(e) => handleSlotDrop(e, slot.id)}
                          onDragOver={(e) => e.preventDefault()}
+                         // Mobile Click Selection
+                         onClick={() => handleSlotClick(slot.id)}
                          className={`
-                           border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center min-h-[280px] transition-all relative
+                           border-2 border-dashed rounded-xl p-4 md:p-6 flex flex-col items-center justify-center min-h-[150px] md:min-h-[280px] transition-all relative cursor-pointer
                            ${filledRecord 
                               ? 'border-police-500 bg-police-900/10' 
                               : 'border-slate-700 bg-slate-900/50 hover:border-slate-500 hover:bg-slate-800'
@@ -757,32 +841,32 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                            ${!isCorrectType && filledRecord ? 'border-red-500 bg-red-900/10' : ''}
                          `}
                       >
-                          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2 w-full text-center">{slot.label}</div>
+                          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 md:mb-4 border-b border-slate-700 pb-2 w-full text-center">{slot.label}</div>
                           
                           {filledRecord ? (
-                              <div className="w-full relative group flex-1 flex flex-col">
-                                  <div className={`p-4 rounded border text-center flex-1 flex flex-col justify-center items-center gap-2 ${getRecordColor(filledRecord.type, true)}`}>
-                                      <div className="font-bold text-lg leading-tight">{filledRecord.title}</div>
+                              <div className="w-full relative group flex-1 flex flex-col items-stretch">
+                                  <div className={`p-3 md:p-4 rounded border text-center flex-1 flex flex-col justify-center items-center gap-1 md:gap-2 ${getRecordColor(filledRecord.type, true)}`}>
+                                      <div className="font-bold text-base md:text-lg leading-tight line-clamp-2">{filledRecord.title}</div>
                                       <div className="text-[10px] opacity-70 font-mono bg-black/30 px-2 py-0.5 rounded">{filledRecord.id}</div>
                                   </div>
                                   <button 
-                                    onClick={() => clearSlot(slot.id)}
-                                    className="absolute -top-3 -right-3 bg-red-600 hover:bg-red-500 text-white rounded-full p-1.5 shadow-lg transition-transform hover:scale-110"
+                                    onClick={(e) => clearSlot(e, slot.id)}
+                                    className="absolute -top-3 -right-3 bg-red-600 hover:bg-red-500 text-white rounded-full p-1.5 shadow-lg transition-transform hover:scale-110 z-10"
                                   >
                                       <XIcon />
                                   </button>
                                   {!isCorrectType && (
-                                    <div className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
+                                    <div className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap z-10">
                                       类型不匹配
                                     </div>
                                   )}
                               </div>
                           ) : (
-                              <div className="text-center text-slate-600 flex flex-col items-center gap-3">
-                                  <div className="p-4 rounded-full bg-slate-800/50">
+                              <div className="text-center text-slate-600 flex flex-col items-center gap-2 md:gap-3">
+                                  <div className="p-3 md:p-4 rounded-full bg-slate-800/50">
                                     <DragIcon />
                                   </div>
-                                  <div className="text-sm font-mono max-w-[150px]">{slot.question}</div>
+                                  <div className="text-xs md:text-sm font-mono max-w-[150px]">{slot.question}</div>
                               </div>
                           )}
                       </div>
@@ -790,19 +874,19 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               })}
            </div>
   
-           <div className="flex flex-col items-center gap-4 mt-auto pb-8">
+           <div className="flex flex-col items-center gap-4 mt-auto pb-24 md:pb-8">
                {resultMessage && (
-                   <div className={`px-8 py-3 rounded-lg font-bold text-lg animate-fadeIn flex items-center gap-2 shadow-xl ${gameState === GameState.SOLVED ? 'bg-green-500 text-black' : 'bg-red-600 text-white'}`}>
+                   <div className={`px-4 md:px-8 py-3 rounded-lg font-bold text-sm md:text-lg animate-fadeIn flex items-center gap-2 shadow-xl ${gameState === GameState.SOLVED ? 'bg-green-500 text-black' : 'bg-red-600 text-white'}`}>
                        {gameState === GameState.SOLVED ? <SparklesIcon /> : <AlertIcon />}
                        {resultMessage}
                    </div>
                )}
   
                <button 
-                  onClick={handleSubmitAccusation}
+                  onClick={(e) => { e.stopPropagation(); handleSubmitAccusation(); }}
                   disabled={gameState === GameState.SOLVED}
                   className={`
-                    font-bold py-3 px-16 rounded text-lg tracking-widest shadow-[0_0_30px_rgba(14,165,233,0.2)] transition-all
+                    font-bold py-3 px-12 md:px-16 rounded text-base md:text-lg tracking-widest shadow-[0_0_30px_rgba(14,165,233,0.2)] transition-all
                     ${gameState === GameState.SOLVED 
                       ? 'bg-green-600 text-black cursor-default opacity-100' 
                       : 'bg-police-600 hover:bg-police-500 text-white hover:scale-105 active:scale-95'
@@ -821,22 +905,22 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
        {renderGuideModal()}
        
        {/* Header */}
-       <header className="h-20 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8 shrink-0 z-20 shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
+       <header className="h-16 md:h-20 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0 z-20 shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
           
           {/* Left: System Identity */}
           <div className="flex flex-col justify-center">
-             <div className="text-white font-bold font-mono tracking-tighter text-2xl flex items-center gap-3">
-                <div className="w-2 h-6 bg-police-500 rounded-sm animate-pulse shadow-[0_0_10px_#0ea5e9]"></div>
+             <div className="text-white font-bold font-mono tracking-tighter text-lg md:text-2xl flex items-center gap-2 md:gap-3">
+                <div className="w-1.5 h-4 md:w-2 md:h-6 bg-police-500 rounded-sm animate-pulse shadow-[0_0_10px_#0ea5e9]"></div>
                 {SYSTEM_NAME.split(' ')[0]} 
-                <span className="text-police-500 text-sm self-end mb-1 tracking-widest opacity-80">OS</span>
+                <span className="text-police-500 text-xs md:text-sm self-end mb-1 tracking-widest opacity-80">OS</span>
              </div>
-             <div className="text-[10px] text-slate-600 font-mono tracking-[0.2em] uppercase pl-5 mt-1">
+             <div className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-[0.2em] uppercase pl-4 md:pl-5 mt-0.5 md:mt-1">
                 CASE ID: {scenario.caseId}
              </div>
           </div>
 
-          {/* Center: Main Navigation (Segmented Control Style) */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex bg-slate-900/90 p-1.5 rounded-full border border-slate-800 shadow-inner gap-1">
+          {/* Center: Main Navigation (Desktop Only) */}
+          <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 bg-slate-900/90 p-1.5 rounded-full border border-slate-800 shadow-inner gap-1">
               <button 
                  onClick={() => setCurrentPage(Page.DATABASE)}
                  className={`
@@ -864,26 +948,26 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
           </div>
 
           {/* Right: Status & Utilities */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
               {/* Status Badge */}
               <div className={`
-                  flex items-center gap-2 px-3 py-1 rounded border text-[10px] font-mono tracking-widest uppercase
+                  flex items-center gap-2 px-2 md:px-3 py-1 rounded border text-[9px] md:text-[10px] font-mono tracking-widest uppercase
                   ${gameState === GameState.SOLVED 
                     ? 'border-green-900/50 bg-green-900/10 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' 
                     : 'border-yellow-900/50 bg-yellow-900/10 text-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.1)]'
                   }
               `}>
                   <div className={`w-1.5 h-1.5 rounded-full ${gameState === GameState.SOLVED ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`}></div>
-                  STATUS: {gameState}
+                  <span className="hidden md:inline">STATUS:</span> {gameState}
               </div>
 
-              <div className="h-8 w-px bg-slate-800/50"></div>
+              <div className="hidden md:block h-8 w-px bg-slate-800/50"></div>
 
               <div className="flex items-center gap-2">
-                  <button onClick={() => setShowGuide(true)} className="p-2 text-slate-500 hover:text-police-400 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Help Guide">
+                  <button onClick={() => setShowGuide(true)} className="p-1.5 md:p-2 text-slate-500 hover:text-police-400 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Help Guide">
                       <HelpIcon />
                   </button>
-                  <button onClick={onExit} className="p-2 text-slate-500 hover:text-red-500 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Disconnect / Exit">
+                  <button onClick={onExit} className="p-1.5 md:p-2 text-slate-500 hover:text-red-500 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Disconnect / Exit">
                       <PowerIcon />
                   </button>
               </div>
@@ -891,7 +975,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
        </header>
 
        {/* Main Content Area */}
-       <main className="flex-1 overflow-hidden p-6 relative bg-black">
+       <main className="flex-1 overflow-hidden p-4 md:p-6 relative bg-black">
            {/* Background Pattern */}
            <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
                style={{
@@ -905,6 +989,24 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             {currentPage === Page.ACCUSATION && renderAccusation()}
           </div>
        </main>
+
+       {/* Mobile Bottom Navigation Bar */}
+       <div className="md:hidden h-16 bg-slate-950 border-t border-slate-800 flex items-stretch shrink-0 z-30 pb-safe">
+           <button 
+              onClick={() => setCurrentPage(Page.DATABASE)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${currentPage === Page.DATABASE ? 'text-police-500 bg-slate-900' : 'text-slate-500'}`}
+           >
+              <DatabaseIcon />
+              <span className="text-[10px] font-bold">档案库</span>
+           </button>
+           <button 
+              onClick={() => setCurrentPage(Page.ACCUSATION)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${currentPage === Page.ACCUSATION ? 'text-red-500 bg-slate-900' : 'text-slate-500'}`}
+           >
+              <AlertIcon />
+              <span className="text-[10px] font-bold">结案通道</span>
+           </button>
+       </div>
     </div>
   );
 };
