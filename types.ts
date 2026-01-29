@@ -15,8 +15,8 @@ export enum GameState {
 }
 
 export interface CrossExamination {
-  triggerRecordId: string; // The ID of the clue that unlocks this dialogue (e.g., ID of 'Whiskey')
-  topic: string;           // Display title, e.g. "关于：威士忌"
+  triggerRecordId: string; // The ID of the clue that unlocks this dialogue
+  topic: string;           // Display title
   content: string;         // The testimony
 }
 
@@ -31,10 +31,10 @@ export interface DatabaseRecord {
   
   // Game mechanics
   isInitial?: boolean;
-  unlockKeywords: string[]; // Aliases. e.g. ['office', '42f', 'ceo room']
+  unlockKeywords: string[]; // Aliases used for search matching
   prerequisiteId?: string; 
   
-  // New: Dynamic Testimony logic
+  // Dynamic Testimony logic
   crossExamination?: CrossExamination[];
 }
 
@@ -57,4 +57,23 @@ export interface AccusationSlot {
   question: string;
   acceptedTypes: RecordType[];
   filledRecordId: string | null;
+}
+
+export interface SolutionData {
+  culpritId: string;
+  evidenceId: string; // Primary evidence ID for UI check (legacy)
+  motiveId: string;   // Primary motive ID for UI check (legacy)
+  validEvidenceIds: string[]; // Array of acceptable evidence IDs
+  validMotiveIds: string[];   // Array of acceptable motive IDs
+  explanation: string;
+}
+
+// The template structure for a full case
+export interface CaseScenario {
+  systemName: string;
+  caseId: string;
+  caseTitle: string;
+  initialRecord: DatabaseRecord;
+  records: DatabaseRecord[]; // Must include initialRecord
+  solution: SolutionData;
 }

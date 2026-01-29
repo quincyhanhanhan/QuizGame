@@ -4,15 +4,12 @@ import {
   Page, 
   RecordType, 
   GameState,
-  AccusationSlot
+  AccusationSlot,
+  CaseScenario,
+  Message
 } from './types';
-import { 
-  RECORDS, 
-  SYSTEM_NAME, 
-  CASE_ID, 
-  SOLUTION,
-  INITIAL_RECORD
-} from './constants';
+import { sendMessageToGemini } from './services/geminiService';
+import { AVAILABLE_CASES, getScenario } from './scenarios/registry';
 
 // --- Icons ---
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>;
@@ -22,6 +19,8 @@ const SparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-
 const DragIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" /></svg>;
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>;
+const HelpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 111.731-1A3 3 0 0013 8a3.001 3.001 0 00-2 2.855V11a1 1 0 11-2 0v-.145c.001-1.625 1.126-2.954 2.767-2.999.044-.001.088-.006.133-.006zM10 15a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>;
+const PowerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" /></svg>;
 
 enum SidebarFilter {
   ALL = '全部',
@@ -31,7 +30,144 @@ enum SidebarFilter {
   DOCS = '档案'
 }
 
-const App: React.FC = () => {
+const GUIDE_STEPS = [
+  {
+    title: "系统概览",
+    icon: <DatabaseIcon />,
+    content: "欢迎使用天网档案系统。你的目标是通过检索数据库，还原案件真相。界面左侧是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
+  },
+  {
+    title: "关键词检索",
+    icon: <SearchIcon />,
+    content: "在上方输入框输入关键词来检索。系统会检查所有【已解锁】档案的正文和口供。只有当关键词在现有线索中被提及时，或者满足前置逻辑，新的档案才会被解锁。"
+  },
+  {
+    title: "动态证词",
+    icon: <ChatIcon />,
+    content: "嫌疑人的口供不是一成不变的。当你获得关键证据后，相关人物的档案会【更新】，解锁新的【关联询问】。请留意侧边栏的 NEW DATA 标记和高亮提示。"
+  },
+  {
+    title: "辅助功能",
+    icon: <SparklesIcon />,
+    content: "卡关了吗？点击指令栏右侧的【AI 分析】获取模糊提示。你也可以点击侧边栏顶部的标签来筛选显示，理清复杂的线索关系。"
+  },
+  {
+    title: "最终结案",
+    icon: <AlertIcon />,
+    content: "当你理清了凶手、关键定罪证据和作案动机后，点击右上角的【结案通道】。将任意已解锁的档案拖入三个槽位中。只有逻辑完全闭环才能成功结案。"
+  }
+];
+
+// ----------------------------------------------------------------------
+// COMPONENT: LAUNCHER (Start Screen)
+// ----------------------------------------------------------------------
+
+interface LauncherProps {
+  onLaunch: (scenario: CaseScenario) => void;
+}
+
+const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
+  const [inputId, setInputId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConnect = (caseId: string) => {
+    const scenario = getScenario(caseId);
+    if (scenario) {
+      onLaunch(scenario);
+    } else {
+      setError(`ERROR: CASE ID '${caseId}' NOT FOUND`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden font-mono">
+       {/* Background Grid Animation */}
+       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+            style={{
+              backgroundImage: 'linear-gradient(#0ea5e9 1px, transparent 1px), linear-gradient(90deg, #0ea5e9 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+              maskImage: 'radial-gradient(circle at center, black 40%, transparent 100%)'
+            }}>
+       </div>
+
+       <div className="z-10 w-full max-w-2xl bg-slate-900/80 border border-police-500/50 rounded-lg p-10 shadow-[0_0_100px_rgba(14,165,233,0.15)] backdrop-blur-md relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-police-500 to-transparent"></div>
+          
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-white mb-2 tracking-tighter">DetectiveOS</h1>
+            <p className="text-police-500 text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-xs text-slate-500 mb-2 uppercase tracking-widest"> Manual Override / Case Search</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={inputId}
+                  onChange={(e) => {
+                    setInputId(e.target.value);
+                    setError(null);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleConnect(inputId)}
+                  placeholder="ENTER CASE ID..." 
+                  className="flex-1 bg-black border border-slate-700 p-4 text-white placeholder-slate-600 focus:border-police-500 outline-none transition-all uppercase"
+                />
+                <button 
+                  onClick={() => handleConnect(inputId)}
+                  className="bg-police-900 hover:bg-police-800 text-police-100 border border-police-700 px-8 font-bold transition-colors"
+                >
+                  CONNECT
+                </button>
+              </div>
+              {error && <div className="text-red-500 text-xs mt-2 animate-shake">{error}</div>}
+            </div>
+
+            <div className="pt-8 border-t border-slate-800">
+               <label className="block text-xs text-slate-500 mb-4 uppercase tracking-widest flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                 Detected Signals (Available Cases)
+               </label>
+               <div className="grid gap-3">
+                 {AVAILABLE_CASES.map(c => (
+                   <button 
+                    key={c.id}
+                    onClick={() => handleConnect(c.id)}
+                    className="flex items-center justify-between p-4 border border-slate-800 hover:border-police-500 hover:bg-police-900/20 bg-black/50 transition-all group text-left"
+                   >
+                     <div>
+                       <div className="text-police-400 font-bold text-sm group-hover:text-white transition-colors">{c.id}</div>
+                       <div className="text-slate-400 text-xs mt-1">{c.title}</div>
+                     </div>
+                     <div className="opacity-0 group-hover:opacity-100 transition-opacity text-police-500">
+                        ACCESS {'>'}
+                     </div>
+                   </button>
+                 ))}
+               </div>
+            </div>
+          </div>
+          
+          <div className="absolute bottom-2 right-4 text-[10px] text-slate-700">
+             SYS_VER 5.0.2 // ONLINE
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// COMPONENT: GAME INTERFACE (The main app logic)
+// ----------------------------------------------------------------------
+
+interface GameInterfaceProps {
+  scenario: CaseScenario;
+  onExit: () => void;
+}
+
+const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
+  const { records: RECORDS, initialRecord: INITIAL_RECORD, solution: SOLUTION, systemName: SYSTEM_NAME } = scenario;
+
   const [currentPage, setCurrentPage] = useState<Page>(Page.DATABASE);
   const [unlockedRecordIds, setUnlockedRecordIds] = useState<string[]>(
     RECORDS.filter(r => r.isInitial).map(r => r.id)
@@ -43,7 +179,6 @@ const App: React.FC = () => {
   const [sidebarFilter, setSidebarFilter] = useState<SidebarFilter>(SidebarFilter.ALL);
   
   // Read State Tracking
-  // Key: Record ID, Value: Number of cross-examinations visible when last viewed
   const [viewedState, setViewedState] = useState<Record<string, number>>({
     [INITIAL_RECORD.id]: 0 
   });
@@ -53,6 +188,11 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+
+  // Guide State
+  const [showGuide, setShowGuide] = useState(false);
+  const [guidePage, setGuidePage] = useState(0);
 
   // Accusation State
   const [slots, setSlots] = useState<AccusationSlot[]>([
@@ -66,20 +206,15 @@ const App: React.FC = () => {
 
   // --- Read/Unread Logic ---
   
-  // Calculate how many cross-examinations are currently unlocked for a given record
   const getVisibleCrossExamsCount = (record: DatabaseRecord) => {
     if (!record.crossExamination) return 0;
     return record.crossExamination.filter(ce => unlockedRecordIds.includes(ce.triggerRecordId)).length;
   };
 
   const isRecordUnread = (record: DatabaseRecord) => {
-    // 1. If never viewed, it's unread
     if (viewedState[record.id] === undefined) return true;
-    
-    // 2. If viewed, but now has MORE visible cross-exams than before, it's "updated"
     const currentVisibleCount = getVisibleCrossExamsCount(record);
     const lastViewedCount = viewedState[record.id];
-    
     return currentVisibleCount > lastViewedCount;
   };
 
@@ -97,8 +232,6 @@ const App: React.FC = () => {
   // --- Helpers ---
   const getRecordColor = (type: RecordType, isUnread: boolean) => {
     const baseOpacity = isUnread ? 'opacity-100' : 'opacity-60';
-    const bgOpacity = isUnread ? 'bg-opacity-20' : 'bg-opacity-5';
-
     let colorClass = '';
     switch (type) {
       case RecordType.SUSPECT: colorClass = `text-red-400 border-red-900/50 bg-red-900/${isUnread ? '20' : '5'}`; break;
@@ -109,7 +242,6 @@ const App: React.FC = () => {
       case RecordType.AUTOPSY: colorClass = `text-slate-400 border-slate-700 bg-slate-800/${isUnread ? '50' : '20'}`; break;
       default: colorClass = `text-slate-400 border-slate-800`;
     }
-    
     return `${colorClass} ${baseOpacity} ${isUnread ? 'shadow-[0_0_10px_rgba(255,255,255,0.05)]' : ''}`;
   };
 
@@ -143,7 +275,6 @@ const App: React.FC = () => {
     setNotification(null);
     const lowerQuery = searchQuery.toLowerCase().trim();
 
-    // 1. Identify potential matches in database
     const potentialMatches = RECORDS.filter(r => 
       r.unlockKeywords.some(k => lowerQuery.includes(k.toLowerCase()) || k.toLowerCase() === lowerQuery)
     );
@@ -153,15 +284,12 @@ const App: React.FC = () => {
       return;
     }
 
-    // 2. Validate availability based on Context OR Prerequisite
     const unlockedRecords = getUnlockedRecords();
     
-    // Construct Combined Context: Title + Main Content + UNLOCKED Cross-Examinations
     let combinedContext = "";
     unlockedRecords.forEach(r => {
       combinedContext += `${r.title} ${r.content} `;
       if (r.crossExamination) {
-        // Only include cross-examinations where the trigger record is ALREADY unlocked
         r.crossExamination.forEach(ce => {
            if (unlockedRecordIds.includes(ce.triggerRecordId)) {
              combinedContext += `${ce.topic} ${ce.content} `;
@@ -172,15 +300,10 @@ const App: React.FC = () => {
     combinedContext = combinedContext.toLowerCase();
 
     const accessibleMatches = potentialMatches.filter(targetRecord => {
-      // Rule 1: Prerequisite Met
       const prereqMet = !targetRecord.prerequisiteId || unlockedRecordIds.includes(targetRecord.prerequisiteId);
-      
-      // Rule 2: Contextual Discovery (Recursive)
-      // Check if keywords are mentioned in the FULL context (including unlocked testimonies)
       const mentionedInContext = targetRecord.unlockKeywords.some(keyword => 
         combinedContext.includes(keyword.toLowerCase())
       );
-
       return prereqMet || mentionedInContext;
     });
 
@@ -189,27 +312,18 @@ const App: React.FC = () => {
       return;
     }
 
-    // 3. Process Valid Matches
     const newUnlocks = accessibleMatches.filter(r => !unlockedRecordIds.includes(r.id));
 
     if (newUnlocks.length > 0) {
       setUnlockedRecordIds(prev => [...prev, ...newUnlocks.map(u => u.id)]);
-      
-      // Updated logic: Do NOT automatically open the record. Just notify.
       setNotification(`检索成功：解密 ${newUnlocks.length} 份新档案 (请查看侧边栏)`);
       setTimeout(() => setNotification(null), 4000);
-      
-      // Clear search query
       setSearchQuery('');
     } else {
-      // If already unlocked, we can just highlight it via notification, no need to switch tab if not desired.
-      // But maybe switching to existing record is fine? 
-      // The user prompt said: "unlocking NEW entries... do not automatically open".
-      // For existing entries, it's usually good UX to navigate to it.
       const record = accessibleMatches[0];
       setNotification(`档案 [${record.title}] 已存在`);
       setTimeout(() => setNotification(null), 2000);
-      openRecord(record.id); // We still open existing ones to help navigation
+      openRecord(record.id); 
       setSearchQuery('');
     }
   };
@@ -223,9 +337,7 @@ const App: React.FC = () => {
   // --- Tab Logic ---
 
   const openRecord = (recordId: string) => {
-    // Mark as read immediately upon opening
     markRecordAsRead(recordId);
-
     if (tabs.includes(recordId)) {
       setActiveTabId(recordId);
       return;
@@ -248,23 +360,25 @@ const App: React.FC = () => {
     }
   };
 
-  // --- Hint Logic ---
+  // --- Hint Logic with Gemini ---
   
-  const generateHint = () => {
-    const nextLocked = RECORDS.find(r => 
-      !unlockedRecordIds.includes(r.id) && 
-      r.prerequisiteId && 
-      unlockedRecordIds.includes(r.prerequisiteId)
-    );
+  const generateHint = async () => {
+    setHintMessage("正在连接 AI 核心分析数据库...");
+    
+    // We provide context to the AI about what is unlocked and what is locked but available next
+    const currentContext = `
+      已解锁档案ID: ${unlockedRecordIds.join(', ')}。
+      用户当前正在寻找新的线索。
+    `;
+    
+    const contextData = {
+      records: RECORDS,
+      caseTitle: scenario.caseTitle,
+      initialBrief: INITIAL_RECORD.content
+    };
 
-    if (nextLocked && nextLocked.prerequisiteId) {
-      const parentRecord = RECORDS.find(r => r.id === nextLocked.prerequisiteId);
-      if (parentRecord) {
-        setHintMessage(`线索提示：请仔细阅读 [${parentRecord.title}] 中的细节描述，特别是大写或括号内的名词。`);
-        return;
-      }
-    }
-    setHintMessage("当前无可用的进一步检索建议。");
+    const response = await sendMessageToGemini(chatHistory, currentContext + " 请给出一个模糊的提示，告诉我不剧透的情况下应该去搜索什么关键词，或者注意哪份档案。", contextData);
+    setHintMessage(response);
   };
 
   // --- Drag and Drop Logic ---
@@ -280,7 +394,6 @@ const App: React.FC = () => {
     setSlots(prev => prev.map(slot => {
       if (slot.id === slotId) {
         const record = RECORDS.find(r => r.id === recordId);
-        // Modified to allow any record type
         if (record) {
            return { ...slot, filledRecordId: recordId };
         }
@@ -330,29 +443,80 @@ const App: React.FC = () => {
     });
   };
 
-  // --- Render Helpers ---
+  const renderGuideModal = () => {
+    if (!showGuide) return null;
+    const step = GUIDE_STEPS[guidePage];
+    
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-slate-900 border border-police-500/50 w-full max-w-lg rounded-lg shadow-[0_0_50px_rgba(14,165,233,0.2)] flex flex-col overflow-hidden relative">
+                {/* Header */}
+                <div className="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center">
+                     <h3 className="text-police-100 font-bold font-mono flex items-center gap-2">
+                        <HelpIcon /> 操作指引 ({guidePage + 1}/{GUIDE_STEPS.length})
+                     </h3>
+                     <button onClick={() => setShowGuide(false)} className="text-slate-500 hover:text-white"><XIcon /></button>
+                </div>
+                
+                {/* Content */}
+                <div className="p-8 flex flex-col items-center text-center flex-1 min-h-[300px] justify-center">
+                    <div className="w-20 h-20 bg-police-900/20 rounded-full flex items-center justify-center text-police-400 mb-6 border border-police-500/30 shadow-[0_0_15px_rgba(14,165,233,0.1)]">
+                        <div className="scale-150">{step.icon}</div>
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-4">{step.title}</h4>
+                    <p className="text-slate-300 leading-relaxed text-sm font-mono px-4">{step.content}</p>
+                </div>
+
+                {/* Footer / Nav */}
+                <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center">
+                    <button 
+                        onClick={() => setGuidePage(Math.max(0, guidePage - 1))}
+                        disabled={guidePage === 0}
+                        className={`px-4 py-2 rounded text-xs font-bold border transition-colors ${guidePage === 0 ? 'border-transparent text-slate-700 cursor-not-allowed' : 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                    >
+                        上一页
+                    </button>
+                    
+                    <div className="flex gap-1.5">
+                        {GUIDE_STEPS.map((_, idx) => (
+                            <div key={idx} className={`w-2 h-2 rounded-full transition-colors ${idx === guidePage ? 'bg-police-500' : 'bg-slate-800'}`}></div>
+                        ))}
+                    </div>
+
+                    <button 
+                         onClick={() => {
+                             if (guidePage < GUIDE_STEPS.length - 1) {
+                                 setGuidePage(guidePage + 1);
+                             } else {
+                                 setShowGuide(false);
+                             }
+                         }}
+                        className="px-4 py-2 rounded text-xs font-bold bg-police-900/50 text-police-100 border border-police-700 hover:bg-police-900 transition-colors"
+                    >
+                        {guidePage === GUIDE_STEPS.length - 1 ? '开始调查' : '下一页'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   const renderDatabase = () => {
     const activeRecord = RECORDS.find(r => r.id === activeTabId);
 
     // Sort logic
     const sortedList = [...getFilteredRecords()].sort((a, b) => {
-        // Always put system first if All
         if (a.type === RecordType.SYSTEM) return -1;
         if (b.type === RecordType.SYSTEM) return 1;
-        
-        // Put Unread Items at the top of their categories
         const aUnread = isRecordUnread(a);
         const bUnread = isRecordUnread(b);
         if (aUnread && !bUnread) return -1;
         if (!aUnread && bUnread) return 1;
-        
         return 0; 
     });
 
     return (
       <div className="flex flex-col h-full gap-4 relative">
-        {/* Toasts */}
         {notification && (
           <div className="absolute top-20 left-1/2 transform -translate-x-1/2 animate-slideDown bg-police-500 text-black font-bold px-6 py-2 rounded shadow-[0_0_20px_rgba(14,165,233,0.6)] z-50 pointer-events-none whitespace-nowrap">
             {notification}
@@ -378,17 +542,11 @@ const App: React.FC = () => {
               autoFocus
             />
           </div>
-          <button 
-            onClick={executeSearch}
-            className="p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors"
-          >
+          <button onClick={executeSearch} className="p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors">
             <SearchIcon />
           </button>
           <div className="h-6 w-px bg-slate-700 mx-2"></div>
-          <button 
-            onClick={generateHint}
-            className="flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap"
-          >
+          <button onClick={generateHint} className="flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap">
             <SparklesIcon /> AI 分析
           </button>
         </div>
@@ -404,7 +562,6 @@ const App: React.FC = () => {
         <div className="flex flex-1 gap-4 overflow-hidden">
           {/* Index Sidebar */}
           <div className="w-64 bg-slate-950 border border-slate-800 rounded flex flex-col">
-            {/* Filter Tabs */}
             <div className="flex p-1 bg-slate-900 border-b border-slate-800 gap-0.5 overflow-x-auto no-scrollbar">
               {Object.values(SidebarFilter).map(filter => (
                  <button
@@ -433,6 +590,8 @@ const App: React.FC = () => {
                   <div 
                     key={record.id}
                     onClick={() => openRecord(record.id)}
+                    draggable
+                    onDragStart={(e) => handleRecordDragStart(e, record.id)}
                     className={`p-2 rounded cursor-pointer border-l-2 transition-all group ${
                       tabs.includes(record.id)
                       ? 'bg-slate-800 ' + getRecordColor(record.type, isUnread)
@@ -457,9 +616,7 @@ const App: React.FC = () => {
                 );
               })}
               {sortedList.length === 0 && (
-                 <div className="text-center text-slate-600 text-xs py-8 italic">
-                   无相关档案
-                 </div>
+                 <div className="text-center text-slate-600 text-xs py-8 italic">无相关档案</div>
               )}
             </div>
           </div>
@@ -468,7 +625,7 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative shadow-2xl">
             {/* Tabs */}
             <div className="flex bg-black border-b border-slate-700 h-10 items-end px-2 gap-1 overflow-x-auto">
-               {tabs.map((tabId, index) => {
+               {tabs.map((tabId) => {
                  const record = RECORDS.find(r => r.id === tabId);
                  if (!record) return null;
                  const isActive = activeTabId === tabId;
@@ -571,165 +728,207 @@ const App: React.FC = () => {
     );
   };
 
-  const renderAccusation = () => (
-    <div className="flex h-full gap-6 animate-fadeIn">
-      {/* Draggable Pool */}
-      <div className="w-64 flex flex-col gap-4">
-        <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 h-full overflow-hidden flex flex-col">
-          <h3 className="text-police-100 font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider p-2 border-b border-slate-800">
-            <DatabaseIcon /> 已发现线索
-          </h3>
-          <div className="overflow-y-auto space-y-2 flex-1 pr-1 custom-scrollbar p-1">
-            {getUnlockedRecords().filter(r => r.type !== RecordType.SYSTEM).map(record => (
-              <div
-                key={record.id}
-                draggable={gameState === GameState.INVESTIGATING}
-                onDragStart={(e) => handleRecordDragStart(e, record.id)}
-                className={`p-2.5 rounded border cursor-grab active:cursor-grabbing hover:border-white transition-colors group ${getRecordColor(record.type, false)}`}
-              >
-                <div className="flex justify-between items-center">
-                   <span className="text-sm font-bold truncate">{record.title}</span>
-                   <DragIcon />
-                </div>
-                <div className="text-[10px] opacity-70 font-mono mt-1 flex justify-between">
-                  <span>{record.id}</span>
-                  <span className="uppercase">{getRecordDisplayType(record.type)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Board */}
-      <div className="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full">
-         {gameState === GameState.INVESTIGATING ? (
-            <div className="space-y-6">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-red-500 flex items-center justify-center gap-3">
-                  <AlertIcon /> 最终结案指控
-                </h2>
-                <p className="text-slate-400 text-sm mt-2">请将右侧关键证据拖入下方对应插槽</p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                {slots.map(slot => {
+  const renderAccusation = () => {
+    return (
+        <div className="max-w-5xl mx-auto h-full flex flex-col p-4 animate-fadeIn">
+           <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                 <AlertIcon /> 结案通道 / FINAL ACCUSATION
+              </h2>
+              <p className="text-slate-500 font-mono text-sm tracking-wider">拖入档案至下方槽位以构建证据链 (DRAG & DROP)</p>
+           </div>
+  
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {slots.map(slot => {
                   const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
+                  const isCorrectType = !filledRecord || slot.acceptedTypes.includes(filledRecord.type);
+                  
                   return (
-                    <div 
-                      key={slot.id}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => handleSlotDrop(e, slot.id)}
-                      className={`relative p-4 rounded-lg border-2 border-dashed transition-all h-64 flex flex-col ${
-                        filledRecord 
-                          ? 'bg-slate-900 border-police-500/50' 
-                          : 'bg-slate-950/50 border-slate-700 hover:border-slate-500'
-                      }`}
-                    >
-                      <h3 className="text-xs font-bold text-police-500 uppercase tracking-wider mb-2 text-center">{slot.label}</h3>
-                      <p className="text-sm text-slate-300 font-bold mb-4 text-center px-2 flex-1 flex items-center justify-center">{slot.question}</p>
-                      
-                      {filledRecord ? (
-                        <div className={`border p-3 rounded flex flex-col items-center animate-fadeIn gap-2 w-full ${getRecordColor(filledRecord.type, false)}`}>
-                          <div className="w-full text-center">
-                            <span className="block font-mono font-bold truncate">{filledRecord.title}</span>
-                            <span className="text-[10px] opacity-70">{getRecordDisplayType(filledRecord.type)}</span>
-                          </div>
-                          <button 
-                            onClick={() => clearSlot(slot.id)}
-                            className="text-xs text-red-400 hover:text-red-300 border border-red-900/50 px-2 py-0.5 rounded bg-red-900/20"
-                          >
-                            撤销
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="h-16 flex items-center justify-center text-slate-600 text-xs italic bg-black/20 rounded mx-4 mb-4">
-                           [ 拖入档案 ]
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button 
-                onClick={handleSubmitAccusation}
-                className="w-full mt-8 bg-red-900/80 hover:bg-red-800 text-white font-bold py-4 rounded border border-red-700 transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] tracking-widest text-lg"
-              >
-                提交报告
-              </button>
-            </div>
-         ) : (
-           <div className={`p-8 rounded-lg border text-center animate-bounce-in ${
-             gameState === GameState.SOLVED 
-               ? 'bg-green-950/30 border-green-500 text-green-100' 
-               : 'bg-red-950/30 border-red-500 text-red-100'
-           }`}>
-             <h2 className="text-4xl font-bold mb-4">{gameState === GameState.SOLVED ? 'SUCCESS' : 'FAILED'}</h2>
-             <div className="text-xl mb-8 font-mono">{resultMessage}</div>
-             {gameState === GameState.SOLVED && (
-                <div className="text-sm font-mono text-green-300 bg-green-900/20 p-6 rounded border border-green-900/50 text-left leading-relaxed">
-                   <h4 className="font-bold mb-2 text-green-500">案件复盘：</h4>
-                   {SOLUTION.explanation}
-                </div>
-             )}
-              <button 
-                 onClick={() => {
-                   setGameState(GameState.INVESTIGATING);
-                   setSlots(prev => prev.map(s => ({...s, filledRecordId: null})));
-                   setResultMessage('');
-                 }}
-                 className="mt-8 px-8 py-3 bg-slate-800 hover:bg-slate-700 rounded border border-slate-600 transition-colors font-bold"
+                      <div 
+                         key={slot.id}
+                         onDrop={(e) => handleSlotDrop(e, slot.id)}
+                         onDragOver={(e) => e.preventDefault()}
+                         className={`
+                           border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center min-h-[280px] transition-all relative
+                           ${filledRecord 
+                              ? 'border-police-500 bg-police-900/10' 
+                              : 'border-slate-700 bg-slate-900/50 hover:border-slate-500 hover:bg-slate-800'
+                           }
+                           ${!isCorrectType && filledRecord ? 'border-red-500 bg-red-900/10' : ''}
+                         `}
+                      >
+                          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2 w-full text-center">{slot.label}</div>
+                          
+                          {filledRecord ? (
+                              <div className="w-full relative group flex-1 flex flex-col">
+                                  <div className={`p-4 rounded border text-center flex-1 flex flex-col justify-center items-center gap-2 ${getRecordColor(filledRecord.type, true)}`}>
+                                      <div className="font-bold text-lg leading-tight">{filledRecord.title}</div>
+                                      <div className="text-[10px] opacity-70 font-mono bg-black/30 px-2 py-0.5 rounded">{filledRecord.id}</div>
+                                  </div>
+                                  <button 
+                                    onClick={() => clearSlot(slot.id)}
+                                    className="absolute -top-3 -right-3 bg-red-600 hover:bg-red-500 text-white rounded-full p-1.5 shadow-lg transition-transform hover:scale-110"
+                                  >
+                                      <XIcon />
+                                  </button>
+                                  {!isCorrectType && (
+                                    <div className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
+                                      类型不匹配
+                                    </div>
+                                  )}
+                              </div>
+                          ) : (
+                              <div className="text-center text-slate-600 flex flex-col items-center gap-3">
+                                  <div className="p-4 rounded-full bg-slate-800/50">
+                                    <DragIcon />
+                                  </div>
+                                  <div className="text-sm font-mono max-w-[150px]">{slot.question}</div>
+                              </div>
+                          )}
+                      </div>
+                  )
+              })}
+           </div>
+  
+           <div className="flex flex-col items-center gap-4 mt-auto pb-8">
+               {resultMessage && (
+                   <div className={`px-8 py-3 rounded-lg font-bold text-lg animate-fadeIn flex items-center gap-2 shadow-xl ${gameState === GameState.SOLVED ? 'bg-green-500 text-black' : 'bg-red-600 text-white'}`}>
+                       {gameState === GameState.SOLVED ? <SparklesIcon /> : <AlertIcon />}
+                       {resultMessage}
+                   </div>
+               )}
+  
+               <button 
+                  onClick={handleSubmitAccusation}
+                  disabled={gameState === GameState.SOLVED}
+                  className={`
+                    font-bold py-3 px-16 rounded text-lg tracking-widest shadow-[0_0_30px_rgba(14,165,233,0.2)] transition-all
+                    ${gameState === GameState.SOLVED 
+                      ? 'bg-green-600 text-black cursor-default opacity-100' 
+                      : 'bg-police-600 hover:bg-police-500 text-white hover:scale-105 active:scale-95'
+                    }
+                  `}
                >
-                 重启系统
+                   {gameState === GameState.SOLVED ? 'CASE CLOSED' : '提交审查 / SUBMIT'}
                </button>
            </div>
-         )}
-      </div>
-    </div>
-  );
+        </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-black text-slate-300 font-sans selection:bg-police-500 selection:text-white flex flex-col">
-      <header className="border-b border-police-900 bg-slate-950/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-police-900 rounded border border-police-500 flex items-center justify-center">
-              <div className="w-3 h-3 bg-police-500 rounded-full animate-pulse"></div>
-            </div>
-            <h1 className="font-mono font-bold text-police-100 tracking-wider text-lg hidden md:block">{SYSTEM_NAME}</h1>
-            <h1 className="font-mono font-bold text-police-100 tracking-wider text-lg md:hidden">Skynet</h1>
+    <div className="h-screen bg-black text-slate-300 font-sans select-none overflow-hidden flex flex-col">
+       {renderGuideModal()}
+       
+       {/* Header */}
+       <header className="h-20 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8 shrink-0 z-20 shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative">
+          
+          {/* Left: System Identity */}
+          <div className="flex flex-col justify-center">
+             <div className="text-white font-bold font-mono tracking-tighter text-2xl flex items-center gap-3">
+                <div className="w-2 h-6 bg-police-500 rounded-sm animate-pulse shadow-[0_0_10px_#0ea5e9]"></div>
+                {SYSTEM_NAME.split(' ')[0]} 
+                <span className="text-police-500 text-sm self-end mb-1 tracking-widest opacity-80">OS</span>
+             </div>
+             <div className="text-[10px] text-slate-600 font-mono tracking-[0.2em] uppercase pl-5 mt-1">
+                CASE ID: {scenario.caseId}
+             </div>
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setCurrentPage(Page.DATABASE)}
-              className={`px-4 py-1.5 rounded text-sm font-mono transition-colors flex items-center gap-2 ${
-                currentPage === Page.DATABASE 
-                  ? 'bg-police-900 text-police-100 border border-police-700' 
-                  : 'text-slate-500 hover:text-police-300'
-              }`}
-            >
-              <DatabaseIcon /> 档案检索
-            </button>
-            <button 
-              onClick={() => setCurrentPage(Page.ACCUSATION)}
-              className={`ml-2 px-4 py-1.5 rounded text-sm font-mono transition-colors flex items-center gap-2 border ${
-                currentPage === Page.ACCUSATION
-                  ? 'bg-red-950 text-red-100 border-red-700'
-                  : 'text-red-500 border-red-900/30 hover:bg-red-950/30'
-              }`}
-            >
-              <AlertIcon /> 结案通道
-            </button>
-          </div>
-        </div>
-      </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 overflow-hidden flex flex-col h-[calc(100vh-64px)]">
-        {currentPage === Page.DATABASE && renderDatabase()}
-        {currentPage === Page.ACCUSATION && renderAccusation()}
-      </main>
+          {/* Center: Main Navigation (Segmented Control Style) */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex bg-slate-900/90 p-1.5 rounded-full border border-slate-800 shadow-inner gap-1">
+              <button 
+                 onClick={() => setCurrentPage(Page.DATABASE)}
+                 className={`
+                    px-8 py-2 rounded-full text-xs font-bold font-mono flex items-center gap-2 transition-all duration-300
+                    ${currentPage === Page.DATABASE 
+                      ? 'bg-police-600 text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]' 
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                    }
+                 `}
+              >
+                  <DatabaseIcon /> 档案库
+              </button>
+              <button 
+                 onClick={() => setCurrentPage(Page.ACCUSATION)}
+                 className={`
+                    px-8 py-2 rounded-full text-xs font-bold font-mono flex items-center gap-2 transition-all duration-300
+                    ${currentPage === Page.ACCUSATION 
+                      ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                    }
+                 `}
+              >
+                  <AlertIcon /> 结案通道
+              </button>
+          </div>
+
+          {/* Right: Status & Utilities */}
+          <div className="flex items-center gap-6">
+              {/* Status Badge */}
+              <div className={`
+                  flex items-center gap-2 px-3 py-1 rounded border text-[10px] font-mono tracking-widest uppercase
+                  ${gameState === GameState.SOLVED 
+                    ? 'border-green-900/50 bg-green-900/10 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' 
+                    : 'border-yellow-900/50 bg-yellow-900/10 text-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.1)]'
+                  }
+              `}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${gameState === GameState.SOLVED ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`}></div>
+                  STATUS: {gameState}
+              </div>
+
+              <div className="h-8 w-px bg-slate-800/50"></div>
+
+              <div className="flex items-center gap-2">
+                  <button onClick={() => setShowGuide(true)} className="p-2 text-slate-500 hover:text-police-400 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Help Guide">
+                      <HelpIcon />
+                  </button>
+                  <button onClick={onExit} className="p-2 text-slate-500 hover:text-red-500 hover:bg-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-800" title="Disconnect / Exit">
+                      <PowerIcon />
+                  </button>
+              </div>
+          </div>
+       </header>
+
+       {/* Main Content Area */}
+       <main className="flex-1 overflow-hidden p-6 relative bg-black">
+           {/* Background Pattern */}
+           <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
+               style={{
+                 backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)',
+                 backgroundSize: '20px 20px'
+               }}>
+           </div>
+          
+          <div className="relative z-10 h-full">
+            {currentPage === Page.DATABASE && renderDatabase()}
+            {currentPage === Page.ACCUSATION && renderAccusation()}
+          </div>
+       </main>
     </div>
+  );
+};
+
+// ----------------------------------------------------------------------
+// COMPONENT: APP (Main Container)
+// ----------------------------------------------------------------------
+
+const App: React.FC = () => {
+  // Main State: Which scenario is currently loaded?
+  const [activeScenario, setActiveScenario] = useState<CaseScenario | null>(null);
+
+  return (
+    <>
+      {activeScenario ? (
+        <GameInterface 
+          key={activeScenario.caseId} // Force reset when case changes
+          scenario={activeScenario} 
+          onExit={() => setActiveScenario(null)} 
+        />
+      ) : (
+        <Launcher onLaunch={setActiveScenario} />
+      )}
+    </>
   );
 };
 
