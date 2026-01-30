@@ -98,4 +98,5 @@ export interface CaseScenario {
   initialRecord: DatabaseRecord;
   records: DatabaseRecord[]; // Must include initialRecord
   solution: SolutionData;
+  isHidden?: boolean; // If true, this case will not appear in the main list
 }

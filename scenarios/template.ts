@@ -2,7 +2,7 @@ import { CaseScenario, RecordType, DatabaseRecord } from '../types';
 
 /* 
   ===========================================
-  🕵️‍♂️ 侦探终端 (DetectiveOS) 案件开发模版 v2.0
+  🕵️‍♂️ 侦探终端 (DetectiveOS) 案件开发模版 v2.1
   ===========================================
   
   开发步骤:
@@ -168,6 +168,9 @@ export const templateCase: CaseScenario = {
   caseTitle: "银行金库失窃案 (开发示例)",
   initialRecord: BRIEFING_RECORD_1, // 虽然这里只填一个，但在 records 数组里把其他设为 isInitial: true 也可以
   records: RECORDS,
+  
+  // 设为 true 则不会在启动页列表显示，只能通过输入ID进入（用于隐藏关卡/彩蛋）
+  isHidden: false,
   
   solution: {
     // 下面三个 ID 对应 Accusation 页面三个槽位的正确答案
