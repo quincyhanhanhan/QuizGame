@@ -1,12 +1,11 @@
 import { CaseScenario } from '../types';
 import { caseX92 } from './caseX92';
-// templateCase is kept in the file system for reference but not imported here
-// import { templateCase } from './template'; 
+import { caseMD20230401 } from './caseMD20230401';
 
 // Map Case IDs to their Scenario Data
 export const CASE_REGISTRY: Record<string, CaseScenario> = {
   [caseX92.caseId]: caseX92,
-  // Template case removed from runtime registry
+  [caseMD20230401.caseId]: caseMD20230401,
 };
 
 export const AVAILABLE_CASES = Object.values(CASE_REGISTRY).map(c => ({

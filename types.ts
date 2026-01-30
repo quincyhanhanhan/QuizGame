@@ -86,7 +86,8 @@ export interface SolutionData {
   motiveId: string;   // Primary motive ID for UI check (legacy)
   validEvidenceIds: string[]; // Array of acceptable evidence IDs
   validMotiveIds: string[];   // Array of acceptable motive IDs
-  explanation: string;
+  explanation: string; // System summary
+  confession?: string; // Culprit's first-person narrative
 }
 
 // The template structure for a full case
