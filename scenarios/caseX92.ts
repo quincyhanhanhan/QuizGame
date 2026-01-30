@@ -42,7 +42,6 @@ const RECORDS: DatabaseRecord[] = [
       1. 办公桌：桌面上有一杯喝了一半的 [威士忌]、一支 [钢笔]，以及一台锁定的 [平板] 电脑。
       2. 抽屉：半开着，里面似乎有一张 [门禁卡]。
       3. 设施：房间角落有一个隐蔽的 [通风管道] 检修口。
-      4. 门禁记录：案发前一小时内，只有秘书 [林雅] 进入过该房间。
     `,
   },
   {
@@ -56,9 +55,6 @@ const RECORDS: DatabaseRecord[] = [
     content: `
       区域描述：
       放置公司核心服务器的恒温机房。噪音巨大，通常无人值守。
-      
-      人员踪迹：
-      CTO [陈默] 声称案发时他正独自在此处维护系统。
       
       设施检查：
       机房中央有一台主 [控制台] (Terminal)，屏幕上闪烁着红色的安全警告。
@@ -77,14 +73,13 @@ const RECORDS: DatabaseRecord[] = [
     content: `
       放在办公桌上的iPad Pro。屏幕亮着，显示系统已锁定。
       
-      屏幕提示：
-      "请输入4位PIN码。提示：深蓝项目启动日 (MMDD)"
-      (你记得案件简报中提到的案发日期 5月14日 似乎就是这一天)
+      屏幕显示：
+      "请输入4位PIN码。"
     `,
     interaction: {
       type: 'password',
       correctPassword: '0514',
-      hintText: '请输入4位数字 (MMDD)',
+      hintText: '请输入4位数字',
       successMessage: '访问权限已获取，正在加载备忘录...',
       unlockedContent: `
       === 备忘录：Project DeepBlue ===
@@ -118,12 +113,11 @@ const RECORDS: DatabaseRecord[] = [
     accessLevel: 2,
     content: `
       机房的主控电脑。屏幕显示 "仅限管理员访问"。
-      需要刷入管理员级别的 [门禁卡] 才能查看系统日志。
     `,
     interaction: {
       type: 'use-item',
       requiredRecordId: 'ITEM_ID_CARD',
-      hintText: '系统已锁定。请刷入管理员ID卡 (将门禁卡拖入此处)。',
+      hintText: '系统已锁定。需要管理员权限。',
       successMessage: '身份验证通过。正在导出关键时间段日志...',
       unlockedContent: `
         [系统日志 - 2024-05-14]
@@ -132,7 +126,7 @@ const RECORDS: DatabaseRecord[] = [
         22:25:00 > 冷却风扇系统重新启动
         
         分析：
-        风扇关闭会导致机房噪音骤减，且停止空气对流。这可能是为了掩盖在该时间段内爬行 [通风管道] 产生的声音。
+        风扇关闭会导致机房噪音骤减，且停止空气对流。
       `
     }
   },
@@ -147,14 +141,13 @@ const RECORDS: DatabaseRecord[] = [
     unlockKeywords: ['郭峰', 'Guo Feng', '死者', '受害人', '老板'],
     accessLevel: 1,
     content: `
-      身份：深蓝科技创始人兼CEO。
+      【个人信息】
+      姓名：郭峰
+      出生日期：1979年3月12日
+      职位：深蓝科技创始人兼CEO
       
-      近期状况：
-      极度痴迷于脑机接口研究。
-      
-      人际关系：
-      - 与CTO [陈默] 因技术理念不合，关系已破裂。
-      - 与秘书 [林雅] 存在金钱纠纷。
+      【简介】
+      技术狂人，作风强硬。近期极度痴迷于脑机接口研究，鲜少公开露面。
     `,
   },
   {
@@ -167,12 +160,20 @@ const RECORDS: DatabaseRecord[] = [
     imageUrl: 'https://picsum.photos/200/200?random=2',
     accessLevel: 1,
     content: `
-      身份：郭峰的行政秘书，负责安排行程和生活起居。
+      【个人信息】
+      姓名：林雅
+      出生日期：1998年11月5日
+      职位：行政秘书
       
-      基本证词：
-      "我真的什么都不知道！我只是按惯例给他送了酒进去，然后就去茶水间了。"
+      【简介】
+      负责郭峰的行程安排和生活起居。工作细致，但近期似乎精神压力较大。
     `,
     crossExamination: [
+      {
+        triggerRecordId: 'DEFAULT',
+        topic: '基本口供',
+        content: '"我真的什么都不知道！我只是按惯例给他送了酒进去，然后就去茶水间了。出来的时候就听到... 听到里面没动静了。"'
+      },
       {
         triggerRecordId: 'ITEM_WHISKEY',
         topic: '关于：威士忌',
@@ -180,8 +181,8 @@ const RECORDS: DatabaseRecord[] = [
       },
       {
         triggerRecordId: 'P_GUO',
-        topic: '关于：债务问题',
-        content: '"...既然你们都查到了。没错，我欠了高利贷，求郭总借我钱，但他拒绝了。但我没必要杀他啊，杀了他我找谁要钱去？"'
+        topic: '关于：与死者关系',
+        content: '"(咬紧嘴唇)... 既然你们都查到了。没错，我确实欠了高利贷，求郭总借我钱，但他拒绝了。但我没必要杀他啊，杀了他我找谁要钱去？"'
       }
     ]
   },
@@ -195,16 +196,24 @@ const RECORDS: DatabaseRecord[] = [
     imageUrl: 'https://picsum.photos/200/200?random=1',
     accessLevel: 2,
     content: `
-      身份：公司联合创始人，技术天才。
+      【个人信息】
+      姓名：陈默
+      出生日期：1985年8月20日
+      职位：联合创始人 / CTO
       
-      基本证词：
-      "郭峰是个疯子，但他死了对公司是损失。案发时我在41层机房修服务器，根本没上过42层。你们可以查监控。"
+      【简介】
+      天才程序员，深蓝科技的技术骨干。性格孤僻，不善言辞。案发当晚正在公司加班。
     `,
     crossExamination: [
       {
+        triggerRecordId: 'DEFAULT',
+        topic: '基本口供',
+        content: '"郭峰死了？...哦。案发时我在41层机房修服务器，根本没上过42层。你们可以查监控，我没有作案时间。"'
+      },
+      {
         triggerRecordId: 'DOC_PROJECT',
         topic: '关于：深蓝项目',
-        content: '"那个项目必须被停止！他在用活人做实验！我警告过他无数次... 但我通过董事会弹劾他就行了，没必要杀人。"'
+        content: '"(情绪突然激动) 那个项目必须被停止！他在用活人做实验！我警告过他无数次... 但我通过董事会弹劾他就行了，没必要杀人。"'
       },
       {
         triggerRecordId: 'LOC_VENT',
@@ -265,7 +274,7 @@ const RECORDS: DatabaseRecord[] = [
     content: `
       勘查记录：
       连接42层CEO室与41层机房的空气循环管道。
-      管道内壁有明显的剐蹭痕迹，灰尘被扰动，说明近期有人从中爬过。
+      管道内壁有明显的剐蹭痕迹，灰尘被扰动。
       
       在管道中部发现了一件遗落物：[手帕]。
     `,

@@ -66,7 +66,7 @@ const GUIDE_STEPS = [
   {
     title: "最终结案",
     icon: <AlertIcon />,
-    content: "当你理清真相后，进入【结案通道】。将档案拖入（手机端点击槽位选择）三个槽位中。只有逻辑完全闭环才能成功结案。"
+    content: "当你理清真相后，进入【结案通道】。将档案拖入三个槽位中。只有逻辑完全闭环才能成功结案。结案通道右侧提供证据库供拖拽。"
   }
 ];
 
@@ -660,7 +660,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     if (selectingSlotId) {
         const slot = slots.find(s => s.id === selectingSlotId);
         if (!slot) return null;
-        const validRecords = getUnlockedRecords().filter(r => slot.acceptedTypes.includes(r.type));
+        // Allows picking any unlocked record (removed type restriction per user request)
+        const validRecords = getUnlockedRecords();
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
@@ -762,13 +763,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
         {/* Command Bar */}
         <div className="flex flex-col md:flex-row gap-2 md:gap-4 md:items-center bg-slate-900 p-3 md:p-4 rounded-lg border border-slate-700 shadow-md shrink-0">
-          <div className="text-police-500 font-mono font-bold whitespace-nowrap text-xs md:text-base flex justify-between items-center">
+          <div className="text-police-500 font-mono font-bold whitespace-nowrap text-xs md:text-base flex justify-between items-center shrink-0">
              <span>{'>'} 检索:</span>
              <button onClick={generateHint} className="md:hidden flex items-center gap-1 px-2 py-1 bg-police-900/30 border border-police-700 rounded text-[10px] text-police-300">
                 <SparklesIcon /> AI
              </button>
           </div>
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
              <input 
               type="text" 
               placeholder="输入关键词..." 
@@ -778,11 +779,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               className="bg-transparent border-none outline-none text-police-100 w-full font-mono placeholder-slate-600 text-base md:text-lg"
             />
           </div>
-          <button onClick={executeSearch} className="hidden md:block p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors">
+          <button onClick={executeSearch} className="hidden md:block p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors shrink-0">
             <SearchIcon />
           </button>
-          <div className="hidden md:block h-6 w-px bg-slate-700 mx-2"></div>
-          <button onClick={generateHint} className="hidden md:flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap">
+          <div className="hidden md:block h-6 w-px bg-slate-700 mx-2 shrink-0"></div>
+          <button onClick={generateHint} className="hidden md:flex items-center gap-2 px-3 py-1 bg-police-900/30 hover:bg-police-900 border border-police-700 rounded text-xs text-police-300 transition-colors whitespace-nowrap shrink-0">
             <SparklesIcon /> AI 分析
           </button>
         </div>
@@ -826,6 +827,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             <div className="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
               {sortedList.map(record => {
                 const isUnread = isRecordUnread(record);
+                // Strict check: Only items that HAVE an interaction definition (target locks) get the icon.
+                // Items that are keys (drag sources) do not get the icon.
                 const hasPendingInteraction = record.interaction && !solvedInteractions.includes(record.id);
 
                 return (
@@ -1009,18 +1012,18 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                       </h3>
                       <div className="grid gap-4">
                         {activeRecord.crossExamination.map((item, idx) => {
-                          const isUnlocked = unlockedRecordIds.includes(item.triggerRecordId);
+                          // Allow showing if trigger is a special 'DEFAULT' or unlocked record
+                          const isUnlocked = item.triggerRecordId === 'DEFAULT' || unlockedRecordIds.includes(item.triggerRecordId);
+                          
+                          if (!isUnlocked) return null;
+
                           return (
-                            <div key={idx} className={`p-4 rounded border transition-all ${
-                                isUnlocked 
-                                ? 'bg-slate-950 border-police-900' 
-                                : 'bg-black/20 border-slate-800 opacity-50'
-                            }`}>
+                            <div key={idx} className={`p-4 rounded border transition-all bg-slate-950 border-police-900`}>
                                 <div className="text-xs font-bold font-mono mb-2 uppercase tracking-wider text-slate-500">
-                                   {isUnlocked ? item.topic : '??? [前置线索未解锁] ???'}
+                                   {item.topic}
                                 </div>
-                                <div className={`font-mono text-sm leading-6 ${isUnlocked ? 'text-police-100' : 'text-slate-700 blur-sm select-none'}`}>
-                                   {isUnlocked ? item.content : '此段证词需要解锁相关物证后方可查看。'}
+                                <div className={`font-mono text-sm leading-6 text-police-100`}>
+                                   {item.content}
                                 </div>
                             </div>
                           );
@@ -1046,177 +1049,186 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   };
 
   const renderAccusation = () => {
-    if (currentPage !== Page.ACCUSATION) return null;
+      const unlockedRecords = getUnlockedRecords();
 
-    return (
-      <div className="fixed inset-0 z-40 bg-black/95 flex items-center justify-center p-4 animate-fadeIn">
-         <div className="w-full max-w-4xl bg-slate-900 border border-red-900/50 rounded-lg shadow-[0_0_50px_rgba(220,38,38,0.2)] flex flex-col h-[90vh]">
-            <div className="p-6 border-b border-red-900/30 flex justify-between items-center bg-red-950/20">
-               <div>
-                  <h2 className="text-2xl text-white font-serif font-bold tracking-widest text-red-500 flex items-center gap-2">
-                     <AlertIcon /> 结案通道
-                  </h2>
-                  <p className="text-red-400/60 text-xs mt-1 uppercase tracking-[0.2em]">Final Accusation Protocol</p>
-               </div>
-               <button onClick={() => setCurrentPage(Page.DATABASE)} className="text-red-500 hover:text-white px-4 py-2 border border-red-900 rounded hover:bg-red-900/50">
-                  取消 / 返回调查
-               </button>
-            </div>
+      return (
+          <div className="flex flex-col md:flex-row h-full bg-slate-900 overflow-hidden relative">
+              <button 
+                  onClick={() => setCurrentPage(Page.DATABASE)}
+                  className="absolute top-4 left-4 flex items-center gap-2 text-slate-400 hover:text-white z-50 bg-slate-900/50 px-2 py-1 rounded"
+              >
+                  <BackIcon /> 返回
+              </button>
 
-            <div className="flex-1 overflow-y-auto p-8 relative">
-                {/* Result Message Overlay */}
-                {resultMessage && (
-                    <div className="mb-8 p-4 border border-red-500 bg-red-900/20 text-red-100 text-center font-bold animate-pulse">
-                        {resultMessage}
-                    </div>
-                )}
+              {/* Main Accusation Area (Left/Top) */}
+              <div className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto">
+                  <div className="text-center mb-6 md:mb-10 pt-10 md:pt-0">
+                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+                          <AlertIcon /> 结案通道
+                      </h2>
+                      <p className="text-slate-500 font-mono text-sm">从右侧证据库中拖入线索以构建证据链</p>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {slots.map(slot => {
-                        const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
-                        return (
-                            <div key={slot.id} className="flex flex-col gap-4">
-                                <div className="bg-black/40 p-4 border border-slate-800 rounded min-h-[100px]">
-                                    <div className="text-red-500 font-bold mb-2">{slot.label}</div>
-                                    <div className="text-slate-500 text-sm mb-4 min-h-[40px]">{slot.question}</div>
-                                    
-                                    <div 
-                                        onDrop={(e) => handleSlotDrop(e, slot.id)}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onClick={() => handleSlotClick(slot.id)}
-                                        className={`
-                                            border-2 border-dashed rounded p-4 text-center cursor-pointer transition-all relative group
-                                            ${filledRecord 
-                                                ? 'border-red-500 bg-red-900/20' 
-                                                : 'border-slate-700 hover:border-red-500/50 hover:bg-red-900/10'
-                                            }
-                                        `}
-                                    >
-                                        {filledRecord ? (
-                                            <div className="relative">
-                                                <div className="font-bold text-white">{filledRecord.title}</div>
-                                                <div className={`text-xs mt-1 px-1 rounded inline-block ${getRecordBadgeColor(filledRecord.type)}`}>
-                                                    {filledRecord.id}
-                                                </div>
-                                                <button 
-                                                    onClick={(e) => clearSlot(e, slot.id)}
-                                                    className="absolute -top-6 -right-2 text-red-500 hover:text-white p-1"
-                                                >
-                                                    <XIcon />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="py-4 text-slate-600 group-hover:text-red-400">
-                                                <div className="mb-2"><DragIcon /></div>
-                                                <div className="text-xs uppercase tracking-wider">
-                                                    拖入{slot.label}线索<br/>或点击选择
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl mx-auto mb-8">
+                      {slots.map(slot => {
+                          const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
+                          return (
+                              <div 
+                                  key={slot.id}
+                                  className="bg-black/50 border border-slate-700 p-6 rounded-lg flex flex-col items-center text-center relative group min-h-[160px] transition-colors"
+                                  onDrop={(e) => handleSlotDrop(e, slot.id)}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onClick={() => handleSlotClick(slot.id)}
+                              >
+                                  <div className="text-police-500 font-bold mb-4 uppercase tracking-widest text-sm">{slot.label}</div>
+                                  
+                                  {filledRecord ? (
+                                      <div className="w-full">
+                                          <div className={`p-3 rounded border mb-2 ${getRecordColor(filledRecord.type, true)}`}>
+                                              <div className="font-bold truncate text-sm">{filledRecord.title}</div>
+                                          </div>
+                                          <button 
+                                              onClick={(e) => clearSlot(e, slot.id)}
+                                              className="text-slate-500 hover:text-red-500 text-xs flex items-center justify-center gap-1 mx-auto"
+                                          >
+                                              <XIcon /> 移除
+                                          </button>
+                                      </div>
+                                  ) : (
+                                      <div className="flex-1 flex flex-col items-center justify-center text-slate-600 border-2 border-dashed border-slate-800 rounded w-full p-4 group-hover:border-police-500/50 transition-colors">
+                                          <div className="mb-2"><DragIcon /></div>
+                                          <div className="text-xs">{slot.question}</div>
+                                          <div className="text-[10px] mt-2 opacity-50 md:hidden block">点击选择</div>
+                                      </div>
+                                  )}
+                              </div>
+                          );
+                      })}
+                  </div>
+
+                  <div className="flex flex-col items-center gap-4 mt-auto pb-4">
+                      <button 
+                          onClick={handleSubmitAccusation}
+                          className="bg-red-900/80 hover:bg-red-800 text-white px-10 py-3 rounded border border-red-700 font-bold tracking-widest text-lg shadow-[0_0_20px_rgba(153,27,27,0.4)] transition-all"
+                      >
+                          提交审查
+                      </button>
+                      
+                      {resultMessage && (
+                          <div className={`text-sm font-bold font-mono p-2 px-4 rounded ${gameState === GameState.SOLVED ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-red-900/30 text-red-400 border border-red-800'}`}>
+                              {resultMessage}
+                          </div>
+                      )}
+                  </div>
+              </div>
+
+              {/* Evidence Locker (Right/Bottom) */}
+              <div className="w-full md:w-80 bg-slate-950 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shrink-0 h-1/3 md:h-auto z-10 shadow-2xl">
+                 <div className="p-3 border-b border-slate-800 bg-black/50 font-bold text-slate-400 text-xs tracking-widest uppercase flex items-center justify-between">
+                    <span>证据库 // Evidence Locker</span>
+                    <span className="text-police-500">{unlockedRecords.length}</span>
+                 </div>
+                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                     <div className="grid grid-cols-1 gap-2">
+                        {unlockedRecords.map(r => (
+                            <div 
+                                key={r.id}
+                                draggable
+                                onDragStart={(e) => handleRecordDragStart(e, r.id)}
+                                className={`p-2 rounded border cursor-grab active:cursor-grabbing text-xs flex flex-col gap-1 hover:bg-slate-900 transition-colors ${getRecordColor(r.type, true)}`}
+                            >
+                                <div className="font-bold truncate">{r.title}</div>
+                                <div className="flex justify-between items-center opacity-70">
+                                    <span className="font-mono">{r.id}</span>
+                                    <span className={`px-1 rounded text-[9px] ${getRecordBadgeColor(r.type)}`}>{getRecordDisplayType(r.type)}</span>
                                 </div>
                             </div>
-                        )
-                    })}
-                </div>
-
-                <div className="mt-12 text-center">
-                    <button 
-                        onClick={handleSubmitAccusation}
-                        disabled={gameState === GameState.SOLVED}
-                        className={`
-                            px-12 py-4 text-lg font-bold tracking-widest uppercase transition-all
-                            ${gameState === GameState.SOLVED
-                                ? 'bg-green-600 text-white cursor-default'
-                                : 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:shadow-[0_0_50px_rgba(220,38,38,0.6)]'
-                            }
-                        `}
-                    >
-                        {gameState === GameState.SOLVED ? '已结案' : '提交审查'}
-                    </button>
-                    {gameState === GameState.SOLVED && (
-                         <div className="mt-4">
-                             <button onClick={() => setShowConfession(true)} className="text-green-500 underline text-sm">
-                                 再次查看嫌疑人自白
-                             </button>
-                         </div>
-                    )}
-                </div>
-            </div>
-         </div>
-      </div>
-    );
+                        ))}
+                     </div>
+                 </div>
+              </div>
+          </div>
+      )
   };
 
   return (
-      <div className="fixed inset-0 bg-black text-slate-300 font-sans overflow-hidden flex flex-col">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-slate-950 p-3 border-b border-slate-800 flex justify-between items-center shrink-0 z-20">
-            <span className="text-police-500 font-bold text-xs tracking-widest uppercase">{SYSTEM_NAME}</span>
-            <button onClick={onExit} className="text-slate-500 hover:text-red-500"><PowerIcon /></button>
+    <div className="h-screen w-screen bg-black text-slate-300 font-sans overflow-hidden flex flex-col">
+        {/* Header - Only show if not in Accusation mode to save space, or simplify */}
+        <div className={`h-12 md:h-14 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-20 ${currentPage === Page.ACCUSATION ? 'hidden' : ''}`}>
+            <div className="flex items-center gap-4">
+                <div className="font-bold text-police-500 tracking-wider text-sm md:text-base flex items-center gap-2">
+                    <div className="w-2 h-2 bg-police-500 rounded-full animate-pulse"></div>
+                    {SYSTEM_NAME}
+                </div>
+                <div className="h-4 w-px bg-slate-800"></div>
+                <div className="text-xs text-slate-500 font-mono hidden md:block">
+                    CASE: {scenario.caseId} // STATUS: {GAME_STATE_MAP[gameState]}
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:gap-4">
+                <button 
+                    onClick={() => setShowGuide(true)}
+                    className="p-2 text-slate-400 hover:text-white transition-colors"
+                    title="操作指引"
+                >
+                    <HelpIcon />
+                </button>
+                
+                <button 
+                    onClick={() => setCurrentPage(prev => prev === Page.DATABASE ? Page.ACCUSATION : Page.DATABASE)}
+                    className={`
+                        px-3 py-1.5 rounded text-xs font-bold border transition-all flex items-center gap-2
+                        ${currentPage === Page.ACCUSATION 
+                            ? 'bg-slate-800 text-white border-slate-600' 
+                            : 'bg-red-900/20 text-red-400 border-red-900/50 hover:bg-red-900/40 hover:border-red-500'
+                        }
+                    `}
+                >
+                    <AlertIcon />
+                    {currentPage === Page.ACCUSATION ? '返回档案' : '申请结案'}
+                </button>
+
+                <div className="h-4 w-px bg-slate-800"></div>
+                
+                <button 
+                    onClick={onExit}
+                    className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-500 transition-colors"
+                >
+                    <PowerIcon />
+                    <span className="hidden md:inline">断开连接</span>
+                </button>
+            </div>
         </div>
 
+        {/* Main Area */}
         <div className="flex-1 overflow-hidden relative">
-            {renderDatabase()}
-            {renderAccusation()}
-        </div>
-
-        {/* Accusation Button (Desktop) */}
-        <div className="hidden md:block absolute bottom-8 right-8 z-30">
-            <button 
-                onClick={() => setCurrentPage(Page.ACCUSATION)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-sm font-bold shadow-lg transition-all border
-                ${gameState === GameState.SOLVED
-                    ? 'bg-green-900/80 text-green-100 border-green-500'
-                    : 'bg-red-900/80 text-red-100 border-red-500 hover:bg-red-900'
-                }`}
-            >
-                <AlertIcon /> {gameState === GameState.SOLVED ? '查看案件详情' : '进入结案通道'}
-            </button>
-        </div>
-        
-        {/* Mobile Footer */}
-        <div className="md:hidden bg-slate-950 border-t border-slate-800 p-2 flex justify-around shrink-0 z-40 pb-safe">
-            <button onClick={() => setCurrentPage(Page.DATABASE)} className={`p-3 rounded flex flex-col items-center gap-1 ${currentPage === Page.DATABASE ? 'text-police-400' : 'text-slate-600'}`}>
-                <DatabaseIcon />
-                <span className="text-[10px]">档案</span>
-            </button>
-            <button onClick={() => setShowGuide(true)} className="p-3 text-slate-600 flex flex-col items-center gap-1">
-                <HelpIcon />
-                <span className="text-[10px]">帮助</span>
-            </button>
-            <button onClick={() => setCurrentPage(Page.ACCUSATION)} className={`p-3 rounded flex flex-col items-center gap-1 ${currentPage === Page.ACCUSATION ? 'text-red-400' : 'text-slate-600'}`}>
-                <AlertIcon />
-                <span className="text-[10px]">结案</span>
-            </button>
-        </div>
-
-        {/* Desktop Exit */}
-        <div className="hidden md:block absolute top-6 right-6 z-50">
-            <button onClick={onExit} className="text-slate-500 hover:text-red-500 flex items-center gap-2 text-xs border border-transparent hover:border-red-900/50 px-2 py-1 rounded transition-colors">
-                <PowerIcon /> 断开连接
-            </button>
+            {currentPage === Page.DATABASE && renderDatabase()}
+            {currentPage === Page.ACCUSATION && renderAccusation()}
         </div>
 
         {/* Modals */}
         {renderGuideModal()}
         {renderConfessionModal()}
         {renderRecordSelectModal()}
-      </div>
+    </div>
   );
 };
 
 const App: React.FC = () => {
-  const [scenario, setScenario] = useState<CaseScenario | null>(null);
+  const [activeScenario, setActiveScenario] = useState<CaseScenario | null>(null);
 
   return (
-    <div className="bg-black min-h-screen text-slate-300">
-      {scenario ? (
-        <GameInterface scenario={scenario} onExit={() => setScenario(null)} />
+    <>
+      {!activeScenario ? (
+        <Launcher onLaunch={setActiveScenario} />
       ) : (
-        <Launcher onLaunch={setScenario} />
+        <GameInterface 
+          scenario={activeScenario} 
+          onExit={() => setActiveScenario(null)} 
+        />
       )}
-    </div>
+    </>
   );
 };
 
