@@ -119,7 +119,7 @@ const GUIDE_STEPS = [
   {
     title: "关键词检索",
     icon: <SearchIcon />,
-    content: "在阅读档案时，点击高亮的【蓝色关键词】或在上方输入框输入关键词。系统会检索所有相关联的【新档案】。只有当线索被发现后，新档案才会解锁。"
+    content: "在阅读档案时，点击高亮的【蓝色关键词】(仅手机端) 或在上方输入框输入关键词。系统会检索所有相关联的【新档案】。只有当线索被发现后，新档案才会解锁。"
   },
   {
     title: "深度互动",
@@ -452,7 +452,10 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   };
 
   const handleKeywordClick = (keyword: string) => {
-    setSearchQuery(keyword); // Visual feedback
+    // Only allow click-to-search on mobile (< 768px)
+    if (window.innerWidth >= 768) return; 
+    
+    setSearchQuery(keyword); 
     executeSearch(keyword);
   };
 
@@ -774,7 +777,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
       const parts = line.split(new RegExp(`(${allUnlockKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi'));
       
       return (
-        <p key={i} className="mb-2 text-slate-300 leading-relaxed">
+        <p key={i} className="mb-2 text-slate-300 leading-relaxed font-mono">
            {parts.map((part, index) => {
              const isKeyword = allUnlockKeywords.some(k => k.toLowerCase() === part.toLowerCase());
              if (isKeyword) {
@@ -782,8 +785,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                  <span 
                    key={index}
                    onClick={() => handleKeywordClick(part)}
-                   className="text-police-400 font-bold border-b border-police-500/30 cursor-pointer hover:bg-police-500/20 hover:text-white transition-all px-0.5 rounded"
-                   title="点击检索"
+                   className="text-police-400 font-bold border-b border-police-500/30 cursor-pointer hover:bg-police-500/20 hover:text-white transition-all px-0.5 rounded md:text-slate-300 md:font-normal md:border-none md:cursor-text md:hover:bg-transparent md:hover:text-slate-300 md:p-0"
                  >
                    {part}
                  </span>
