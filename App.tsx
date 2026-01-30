@@ -104,8 +104,8 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-police-500 to-transparent"></div>
           
           <div className="text-center mb-10 md:mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">DetectiveOS</h1>
-            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">犯罪调查终端 / Crime Investigation Terminal</p>
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">天网档案系统</h1>
+            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
           </div>
 
           <div className="space-y-6">
@@ -159,7 +159,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           </div>
           
           <div className="absolute bottom-2 right-4 text-[10px] text-slate-700">
-             系统版本 5.0.3 // 在线
+             系统版本 5.0.3
           </div>
        </div>
 

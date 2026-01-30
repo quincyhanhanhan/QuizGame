@@ -329,7 +329,7 @@ const RECORDS: DatabaseRecord[] = [
 
 export const caseX92: CaseScenario = {
   systemName: "天网档案系统 (SkyNet Archives) v5.0",
-  caseId: "CASE-2024-X92",
+  caseId: "MD20240902",
   caseTitle: "深蓝大厦CEO毒杀案",
   initialRecord: INITIAL_RECORD,
   records: RECORDS,
