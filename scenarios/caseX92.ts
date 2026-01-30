@@ -9,7 +9,7 @@ const INITIAL_RECORD: DatabaseRecord = {
   isInitial: true,
   unlockKeywords: [],
   content: `=== 案件简报 ===
-案发时间：2024年5月14日 22:30
+案发时间：2024年9月2日 22:30
 地点：[深蓝大厦42层] CEO办公室
 受害人：[郭峰] (45岁, 创始人)
 
@@ -81,7 +81,7 @@ const RECORDS: DatabaseRecord[] = [
     `,
     interaction: {
       type: 'password',
-      correctPassword: '0514',
+      correctPassword: '0312',
       hintText: '请输入4位数字',
       successMessage: '访问权限已获取，正在加载备忘录...',
       unlockedContent: `
@@ -89,8 +89,8 @@ const RECORDS: DatabaseRecord[] = [
       状态：试验阶段
       
       5月1日：河豚毒素提取顺利，纯度极高。
-      5月10日：陈默那个懦夫又来阻止我，他不懂这是为了人类进化！
-      5月14日：今天就是启动日。没有什么能阻挡我。
+      6月10日：陈默那个懦夫又来阻止我，他不懂这是为了人类进化！
+      9月1日：今天就是启动日。没有什么能阻挡我。
       
       (获得了新关键词：深蓝项目, DeepBlue, 试验)
       `
