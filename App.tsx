@@ -449,8 +449,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   };
 
   const handleKeywordClick = (keyword: string) => {
-    // Only allow click-to-search on mobile (< 768px)
-    if (window.innerWidth >= 768) return; 
+    // Only allow click-to-search on mobile/tablet (< 1024px)
+    if (window.innerWidth >= 1024) return; 
     
     setSearchQuery(keyword); 
     executeSearch(keyword);
@@ -782,7 +782,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                  <span 
                    key={index}
                    onClick={() => handleKeywordClick(part)}
-                   className="text-police-400 font-bold border-b border-police-500/30 cursor-pointer hover:bg-police-500/20 hover:text-white transition-all px-0.5 rounded md:text-slate-300 md:font-normal md:border-none md:cursor-text md:hover:bg-transparent md:hover:text-slate-300 md:p-0"
+                   className="text-police-400 font-bold border-b border-police-500/30 cursor-pointer hover:bg-police-500/20 hover:text-white transition-all px-0.5 rounded lg:text-slate-300 lg:font-normal lg:border-none lg:cursor-text lg:hover:bg-transparent lg:hover:text-slate-300 lg:p-0"
                  >
                    {part}
                  </span>
@@ -1158,11 +1158,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             </div>
           </div>
         </div>
-
-        {/* Modals */}
-        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
-        {renderConfessionModal()}
-        {renderRecordSelectModal()}
       </div>
     );
   };
@@ -1217,6 +1212,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
         <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden bg-slate-950/50 border border-slate-800/50">
             {currentPage === Page.ACCUSATION ? renderAccusation() : renderDatabase()}
         </div>
+
+        {/* Persistent Modals at Root Level */}
+        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+        {renderConfessionModal()}
+        {renderRecordSelectModal()}
     </div>
   );
 };
