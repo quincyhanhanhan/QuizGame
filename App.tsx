@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   DatabaseRecord, 
   Page, 
@@ -28,6 +28,69 @@ const UnlockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 
 const FingerPrintIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518 9.001 9.001 0 003.375 16.334 1 1 0 101.164-1.631 7.001 7.001 0 01-2.607-15.22zM10.56 1.107a1 1 0 10-1.12 1.895A7.002 7.002 0 0117.9 10a7.002 7.002 0 01-14.803.957 1 1 0 00-1.984.254A9.002 9.002 0 0019.9 10a9.002 9.002 0 00-9.34-8.892zm-2.484 5.37a1 1 0 101.528 1.288 3.001 3.001 0 014.288 3.75 1 1 0 101.815.836 5.001 5.001 0 00-7.63-5.874z" clipRule="evenodd" /></svg>;
 const PuzzleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg>;
 
+// Guide Modal Component
+const GuideModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [guidePage, setGuidePage] = useState(0);
+
+  if (!isOpen) return null;
+
+  const step = GUIDE_STEPS[guidePage];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+      <div className="bg-slate-900 border border-police-500/50 w-full max-w-lg rounded-lg shadow-[0_0_50px_rgba(14,165,233,0.2)] flex flex-col overflow-hidden relative">
+          {/* Header */}
+          <div className="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 className="text-police-100 font-bold font-mono flex items-center gap-2">
+                  <HelpIcon /> 操作指引 ({guidePage + 1}/{GUIDE_STEPS.length})
+                </h3>
+                <button onClick={onClose} className="text-slate-500 hover:text-white"><XIcon /></button>
+          </div>
+          
+          {/* Content */}
+          <div className="p-8 flex flex-col items-center text-center flex-1 min-h-[300px] justify-center">
+              <div className="w-20 h-20 bg-police-900/20 rounded-full flex items-center justify-center text-police-400 mb-6 border border-police-500/30 shadow-[0_0_15px_rgba(14,165,233,0.1)]">
+                  <div className="scale-150">{step.icon}</div>
+              </div>
+              <h4 className="text-xl font-bold text-white mb-4">{step.title}</h4>
+              <p className="text-slate-300 leading-relaxed text-sm font-mono px-4">{step.content}</p>
+          </div>
+
+          {/* Footer / Nav */}
+          <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center">
+              <button 
+                  onClick={() => setGuidePage(Math.max(0, guidePage - 1))}
+                  disabled={guidePage === 0}
+                  className={`px-4 py-2 rounded text-xs font-bold border transition-colors ${guidePage === 0 ? 'border-transparent text-slate-700 cursor-not-allowed' : 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              >
+                  上一页
+              </button>
+              
+              <div className="flex gap-1.5">
+                  {GUIDE_STEPS.map((_, idx) => (
+                      <div key={idx} className={`w-2 h-2 rounded-full transition-colors ${idx === guidePage ? 'bg-police-500' : 'bg-slate-800'}`}></div>
+                  ))}
+              </div>
+
+              <button 
+                    onClick={() => {
+                        if (guidePage < GUIDE_STEPS.length - 1) {
+                            setGuidePage(guidePage + 1);
+                        } else {
+                            onClose();
+                            setGuidePage(0);
+                        }
+                    }}
+                  className="px-4 py-2 rounded text-xs font-bold bg-police-900/50 text-police-100 border border-police-700 hover:bg-police-900 transition-colors"
+              >
+                  {guidePage === GUIDE_STEPS.length - 1 ? '开始调查' : '下一页'}
+              </button>
+          </div>
+      </div>
+    </div>
+  );
+};
+
 enum SidebarFilter {
   ALL = '全部',
   PEOPLE = '人物',
@@ -44,6 +107,11 @@ const GAME_STATE_MAP: Record<GameState, string> = {
 
 const GUIDE_STEPS = [
   {
+    title: "接入系统",
+    icon: <PowerIcon />,
+    content: "首先，在启动页输入案件编号或直接点击下方的【可用信号】接入案件。这会初始化您的侦探终端。"
+  },
+  {
     title: "系统概览",
     icon: <DatabaseIcon />,
     content: "欢迎使用天网档案系统。你的目标是通过检索数据库，还原案件真相。界面左侧（手机端为列表页）是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
@@ -51,7 +119,7 @@ const GUIDE_STEPS = [
   {
     title: "关键词检索",
     icon: <SearchIcon />,
-    content: "在输入框输入关键词检索。系统会检查所有【已解锁】档案。只有当关键词在现有线索中被提及时，或者满足前置逻辑，新的档案才会被解锁。"
+    content: "在阅读档案时，点击高亮的【蓝色关键词】或在上方输入框输入关键词。系统会检索所有相关联的【新档案】。只有当线索被发现后，新档案才会解锁。"
   },
   {
     title: "深度互动",
@@ -81,6 +149,7 @@ interface LauncherProps {
 const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
   const [inputId, setInputId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const handleConnect = (caseId: string) => {
     const scenario = getScenario(caseId);
@@ -107,7 +176,15 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           
           <div className="text-center mb-10 md:mb-12">
             <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">天网档案系统</h1>
-            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
+            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase mb-4">Crime Investigation Terminal</p>
+            
+            {/* Guide Button */}
+            <button 
+              onClick={() => setShowGuide(true)}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-police-900/40 border border-police-500/30 text-police-300 hover:text-white hover:bg-police-900/60 hover:border-police-500 text-xs transition-all cursor-pointer"
+            >
+              <HelpIcon /> 新手操作指引
+            </button>
           </div>
 
           <div className="space-y-6">
@@ -171,6 +248,9 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
             <AlertIcon /> 一切故事纯属虚构，请勿模仿
           </div>
        </div>
+
+       {/* Guide Modal */}
+       <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }
@@ -219,7 +299,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
   // Guide State
   const [showGuide, setShowGuide] = useState(false);
-  const [guidePage, setGuidePage] = useState(0);
 
   // Confession Modal State
   const [showConfession, setShowConfession] = useState(false);
@@ -233,6 +312,14 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   const [resultMessage, setResultMessage] = useState<string>('');
 
   const getUnlockedRecords = () => RECORDS.filter(r => unlockedRecordIds.includes(r.id));
+
+  // --- Keyword Highlighting Logic ---
+  const allUnlockKeywords = useMemo(() => {
+    const keywords = new Set<string>();
+    RECORDS.forEach(r => r.unlockKeywords.forEach(k => keywords.add(k)));
+    // Sort by length descending to handle overlapping keywords correctly (e.g. "Office Key" before "Office")
+    return Array.from(keywords).sort((a, b) => b.length - a.length);
+  }, [RECORDS]);
 
   // --- Read/Unread Logic ---
   
@@ -298,12 +385,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     if (errorMsg) setErrorMsg(null);
   };
 
-  const executeSearch = () => {
-    if (!searchQuery.trim()) return;
+  const executeSearch = (queryOverride?: string) => {
+    const query = queryOverride || searchQuery;
+    if (!query.trim()) return;
 
     setErrorMsg(null);
     setNotification(null);
-    const lowerQuery = searchQuery.toLowerCase().trim();
+    const lowerQuery = query.toLowerCase().trim();
 
     const potentialMatches = RECORDS.filter(r => 
       r.unlockKeywords.some(k => lowerQuery.includes(k.toLowerCase()) || k.toLowerCase() === lowerQuery)
@@ -352,15 +440,20 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
       setUnlockedRecordIds(prev => [...prev, ...newUnlocks.map(u => u.id)]);
       setNotification(`检索成功：解密 ${newUnlocks.length} 份新档案`);
       setTimeout(() => setNotification(null), 4000);
-      setSearchQuery('');
+      if (!queryOverride) setSearchQuery(''); // Only clear if user typed it
     } else {
       // Logic changed: Do not switch tabs, just notify.
       const record = accessibleMatches[0];
       setNotification(`该档案 [${record.title}] 已在列表中`);
       setTimeout(() => setNotification(null), 2000);
       // openRecord(record.id);  <-- REMOVED
-      setSearchQuery('');
+      if (!queryOverride) setSearchQuery('');
     }
+  };
+
+  const handleKeywordClick = (keyword: string) => {
+    setSearchQuery(keyword); // Visual feedback
+    executeSearch(keyword);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -561,64 +654,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
   // --- Render Modals ---
 
-  const renderGuideModal = () => {
-    if (!showGuide) return null;
-    const step = GUIDE_STEPS[guidePage];
-    
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-slate-900 border border-police-500/50 w-full max-w-lg rounded-lg shadow-[0_0_50px_rgba(14,165,233,0.2)] flex flex-col overflow-hidden relative">
-                {/* Header */}
-                <div className="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center">
-                     <h3 className="text-police-100 font-bold font-mono flex items-center gap-2">
-                        <HelpIcon /> 操作指引 ({guidePage + 1}/{GUIDE_STEPS.length})
-                     </h3>
-                     <button onClick={() => setShowGuide(false)} className="text-slate-500 hover:text-white"><XIcon /></button>
-                </div>
-                
-                {/* Content */}
-                <div className="p-8 flex flex-col items-center text-center flex-1 min-h-[300px] justify-center">
-                    <div className="w-20 h-20 bg-police-900/20 rounded-full flex items-center justify-center text-police-400 mb-6 border border-police-500/30 shadow-[0_0_15px_rgba(14,165,233,0.1)]">
-                        <div className="scale-150">{step.icon}</div>
-                    </div>
-                    <h4 className="text-xl font-bold text-white mb-4">{step.title}</h4>
-                    <p className="text-slate-300 leading-relaxed text-sm font-mono px-4">{step.content}</p>
-                </div>
-
-                {/* Footer / Nav */}
-                <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center">
-                    <button 
-                        onClick={() => setGuidePage(Math.max(0, guidePage - 1))}
-                        disabled={guidePage === 0}
-                        className={`px-4 py-2 rounded text-xs font-bold border transition-colors ${guidePage === 0 ? 'border-transparent text-slate-700 cursor-not-allowed' : 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-                    >
-                        上一页
-                    </button>
-                    
-                    <div className="flex gap-1.5">
-                        {GUIDE_STEPS.map((_, idx) => (
-                            <div key={idx} className={`w-2 h-2 rounded-full transition-colors ${idx === guidePage ? 'bg-police-500' : 'bg-slate-800'}`}></div>
-                        ))}
-                    </div>
-
-                    <button 
-                         onClick={() => {
-                             if (guidePage < GUIDE_STEPS.length - 1) {
-                                 setGuidePage(guidePage + 1);
-                             } else {
-                                 setShowGuide(false);
-                             }
-                         }}
-                        className="px-4 py-2 rounded text-xs font-bold bg-police-900/50 text-police-100 border border-police-700 hover:bg-police-900 transition-colors"
-                    >
-                        {guidePage === GUIDE_STEPS.length - 1 ? '开始调查' : '下一页'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-  }
-
   const renderConfessionModal = () => {
     if (!showConfession || !SOLUTION.confession) return null;
     
@@ -731,6 +766,36 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     return null;
   };
 
+  const renderContentWithHighlights = (content: string) => {
+    return content.split('\n').map((line, i) => {
+      if (!line) return <p key={i} className="mb-2 h-4"></p>;
+
+      // Create a regex to match any of the keywords
+      const parts = line.split(new RegExp(`(${allUnlockKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi'));
+      
+      return (
+        <p key={i} className="mb-2 text-slate-300 leading-relaxed">
+           {parts.map((part, index) => {
+             const isKeyword = allUnlockKeywords.some(k => k.toLowerCase() === part.toLowerCase());
+             if (isKeyword) {
+               return (
+                 <span 
+                   key={index}
+                   onClick={() => handleKeywordClick(part)}
+                   className="text-police-400 font-bold border-b border-police-500/30 cursor-pointer hover:bg-police-500/20 hover:text-white transition-all px-0.5 rounded"
+                   title="点击检索"
+                 >
+                   {part}
+                 </span>
+               )
+             }
+             return <span key={index}>{part}</span>;
+           })}
+        </p>
+      );
+    });
+  };
+
   const renderDatabase = () => {
     const activeRecord = RECORDS.find(r => r.id === activeTabId);
 
@@ -779,7 +844,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               className="bg-transparent border-none outline-none text-police-100 w-full font-mono placeholder-slate-600 text-base md:text-lg"
             />
           </div>
-          <button onClick={executeSearch} className="hidden md:block p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors shrink-0">
+          <button onClick={() => executeSearch()} className="hidden md:block p-2 bg-police-900/50 hover:bg-police-900 border border-police-700 rounded text-police-300 transition-colors shrink-0">
             <SearchIcon />
           </button>
           <div className="hidden md:block h-6 w-px bg-slate-700 mx-2 shrink-0"></div>
@@ -942,9 +1007,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                   </div>
                   
                   <div className="prose prose-invert prose-base md:prose-lg max-w-none font-mono">
-                     {activeRecord.content.split('\n').map((line, i) => (
-                       <p key={i} className="mb-2 text-slate-300 leading-relaxed">{line}</p>
-                     ))}
+                     {renderContentWithHighlights(activeRecord.content)}
                   </div>
 
                   {/* Interaction / Lock Section */}
@@ -957,9 +1020,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
                         {solvedInteractions.includes(activeRecord.id) ? (
                             <div className="animate-fadeIn prose prose-invert prose-base md:prose-lg font-mono p-4 bg-police-900/10 border-l-4 border-police-500">
-                                {activeRecord.interaction.unlockedContent.split('\n').map((line, i) => (
-                                    <p key={i} className="mb-2 text-police-100">{line}</p>
-                                ))}
+                                {renderContentWithHighlights(activeRecord.interaction.unlockedContent)}
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">
@@ -1023,7 +1084,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                                    {item.topic}
                                 </div>
                                 <div className={`font-mono text-sm leading-6 text-police-100`}>
-                                   {item.content}
+                                   {renderContentWithHighlights(item.content)}
                                 </div>
                             </div>
                           );
@@ -1044,6 +1105,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             </div>
           </div>
         </div>
+
+        {/* Modals */}
+        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+        {renderConfessionModal()}
+        {renderRecordSelectModal()}
       </div>
     );
   };
@@ -1208,7 +1274,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
         </div>
 
         {/* Modals */}
-        {renderGuideModal()}
+        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
         {renderConfessionModal()}
         {renderRecordSelectModal()}
     </div>
