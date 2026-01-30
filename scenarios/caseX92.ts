@@ -3,7 +3,7 @@ import { CaseScenario, RecordType, DatabaseRecord } from '../types';
 const INITIAL_RECORD: DatabaseRecord = {
   id: 'SYS-001',
   type: RecordType.SYSTEM,
-  title: '案件简报: CASE-X92',
+  title: '案件简报: MD20240902',
   tags: ['起始', '必读'],
   accessLevel: 0,
   isInitial: true,
