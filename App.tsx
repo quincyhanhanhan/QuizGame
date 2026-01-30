@@ -114,7 +114,7 @@ const GUIDE_STEPS = [
   {
     title: "系统概览",
     icon: <DatabaseIcon />,
-    content: "欢迎使用天网档案系统。你的目标是通过检索数据库，还原案件真相。界面左侧（手机端为列表页）是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
+    content: "欢迎使用虚拟天网档案系统游戏。你的目标是通过检索数据库，还原案件真相。界面左侧（手机端为列表页）是【档案索引】，中间是【阅读器】，上方是【指令栏】。"
   },
   {
     title: "关键词检索",
@@ -132,9 +132,9 @@ const GUIDE_STEPS = [
     content: "嫌疑人的口供不是一成不变的。当你获得关键证据后，相关人物的档案会【更新】，解锁新的【关联询问】。请留意 NEW DATA 标记。"
   },
   {
-    title: "最终结案",
+    title: "收集与结案",
     icon: <AlertIcon />,
-    content: "当你理清真相后，进入【结案通道】。将档案拖入三个槽位中。只有逻辑完全闭环才能成功结案。结案通道右侧提供证据库供拖拽。"
+    content: "请留意顶部的 STATUS 状态。当显示【线索已收集完成】时，说明所有隐藏档案已被找出。此时进入【结案通道】，构建完整的证据链（凶手+铁证+动机）以查明真相。"
   }
 ];
 
@@ -175,7 +175,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-police-500 to-transparent"></div>
           
           <div className="text-center mb-10 md:mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">天网档案系统</h1>
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">虚拟天网档案系统</h1>
             <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase mb-4">Crime Investigation Terminal</p>
             
             {/* Guide Button */}
@@ -242,13 +242,6 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           </div>
        </div>
 
-       {/* Enhanced Fictional Disclaimer */}
-       <div className="absolute bottom-6 left-0 w-full flex justify-center pointer-events-none z-20 px-4">
-          <div className="bg-orange-500/10 border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-xs md:text-sm font-bold tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.3)] backdrop-blur-sm animate-pulse flex items-center gap-2">
-            <AlertIcon /> 一切故事纯属虚构，请勿模仿
-          </div>
-       </div>
-
        {/* Guide Modal */}
        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
@@ -312,6 +305,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   const [resultMessage, setResultMessage] = useState<string>('');
 
   const getUnlockedRecords = () => RECORDS.filter(r => unlockedRecordIds.includes(r.id));
+  const isAllCluesCollected = unlockedRecordIds.length === RECORDS.length;
 
   // --- Keyword Highlighting Logic ---
   const allUnlockKeywords = useMemo(() => {
@@ -888,7 +882,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
 
             <div className="p-2 bg-slate-900/50 border-b border-slate-800 font-bold text-slate-500 text-[10px] tracking-wider flex justify-between shrink-0">
               <span>档案索引</span>
-              <span>数量: {sortedList.length}</span>
+              <span>数量: {sortedList.length} / {RECORDS.length}</span>
             </div>
             
             <div className="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
@@ -1230,7 +1224,14 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                 </div>
                 <div className="h-4 w-px bg-slate-800"></div>
                 <div className="text-xs text-slate-500 font-mono hidden md:block">
-                    CASE: {scenario.caseId} // STATUS: {GAME_STATE_MAP[gameState]}
+                    CASE: {scenario.caseId} // STATUS: 
+                    {gameState === GameState.SOLVED ? (
+                       <span className="text-green-500 font-bold ml-1">已结案 (CASE CLOSED)</span>
+                    ) : isAllCluesCollected ? (
+                       <span className="text-green-400 font-bold ml-1 animate-pulse">线索已收集完成 (CLUES COMPLETE)</span>
+                    ) : (
+                       <span className="text-slate-400 ml-1">{GAME_STATE_MAP[gameState]} ({Math.round((unlockedRecordIds.length / RECORDS.length) * 100)}%)</span>
+                    )}
                 </div>
             </div>
 
@@ -1296,6 +1297,13 @@ const App: React.FC = () => {
           onExit={() => setActiveScenario(null)} 
         />
       )}
+      
+      {/* Global Disclaimer: Moved here to persist across all screens */}
+      <div className="fixed bottom-6 left-0 w-full flex justify-center pointer-events-none z-[100] px-4">
+          <div className="bg-orange-500/10 border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-xs md:text-sm font-bold tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.3)] backdrop-blur-sm animate-pulse flex items-center gap-2">
+            <AlertIcon /> 一切故事纯属虚构，请勿模仿
+          </div>
+       </div>
     </>
   );
 };

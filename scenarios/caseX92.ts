@@ -14,9 +14,12 @@ const INITIAL_RECORD: DatabaseRecord = {
 受害人：[郭峰] (45岁, 创始人)
 
 现场综述：
-警方接到自动报警后赶到现场，发现郭峰趴在办公桌上已确认死亡。
+警方接到自动报警后赶到现场。第一发现人、秘书 [林雅] 称进入办公室时发现郭峰已死亡。
 现场门窗完好，无强行闯入痕迹。
-案发时大楼高层区域已被封锁，仅有少数人员拥有权限。
+案发时大楼高层区域已被封锁。
+
+人员控制：
+目前大楼内仅有少数人员拥有权限，包括在 **41层** [机房] 加班的 CTO [陈默]。
 
 初步行动指南：
 建议侦探先对 [深蓝大厦42层] 进行详细检索，并调查受害人 [郭峰] 的背景。`,
@@ -155,7 +158,7 @@ const RECORDS: DatabaseRecord[] = [
     type: RecordType.SUSPECT,
     title: '嫌疑人：林雅',
     tags: ['秘书', '第一发现人'],
-    prerequisiteId: 'LOC_42F', // Found from Office log
+    prerequisiteId: 'SYS-001', 
     unlockKeywords: ['林雅', 'Lin Ya', '秘书', '助理'],
     imageUrl: 'https://picsum.photos/200/200?random=2',
     accessLevel: 1,
@@ -191,7 +194,7 @@ const RECORDS: DatabaseRecord[] = [
     type: RecordType.SUSPECT,
     title: '嫌疑人：陈默',
     tags: ['CTO', '合伙人'],
-    prerequisiteId: 'SYS-001', // Can be found via search easily
+    prerequisiteId: 'SYS-001', 
     unlockKeywords: ['陈默', 'Chen Mo', 'CTO', '技术官'],
     imageUrl: 'https://picsum.photos/200/200?random=1',
     accessLevel: 2,
@@ -337,7 +340,7 @@ const RECORDS: DatabaseRecord[] = [
 ];
 
 export const caseX92: CaseScenario = {
-  systemName: "天网档案系统 (SkyNet Archives) v5.0",
+  systemName: "虚拟天网档案系统 (SkyNet Archives) v5.0",
   caseId: "MD20240902",
   caseTitle: "深蓝大厦CEO毒杀案",
   initialRecord: INITIAL_RECORD,

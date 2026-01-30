@@ -40,6 +40,7 @@ const RECORDS: DatabaseRecord[] = [
     content: `
       环境：
       老旧办公楼的独立房间，到处积满灰尘。
+      办公桌上有一个显眼的 [日历]，旁边是堆满文件的垃圾桶。
       
       气味：
       房间内有一股极淡的、类似醋酸（酸味）的味道。
@@ -665,7 +666,7 @@ const RECORDS: DatabaseRecord[] = [
 ];
 
 export const caseMD20230401: CaseScenario = {
-  systemName: "天网档案系统 (SkyNet Archives) v5.0",
+  systemName: "虚拟天网档案系统 (SkyNet Archives) v5.0",
   caseId: "MD20230401",
   caseTitle: "玻璃后的盲点",
   initialRecord: INITIAL_RECORD,
