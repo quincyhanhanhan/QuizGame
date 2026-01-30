@@ -6,14 +6,15 @@ import {
   GameState,
   AccusationSlot,
   CaseScenario,
-  Message
+  Message,
+  Interaction
 } from './types';
-import { sendMessageToGemini } from './services/geminiService';
+// Removed external AI service import
 import { AVAILABLE_CASES, getScenario } from './scenarios/registry';
 
 // --- Icons ---
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>;
-const DatabaseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>;
+const DatabaseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>;
 const AlertIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
 const SparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>;
 const DragIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" /></svg>;
@@ -22,6 +23,8 @@ const ChatIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-
 const HelpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 111.731-1A3 3 0 0013 8a3.001 3.001 0 00-2 2.855V11a1 1 0 11-2 0v-.145c.001-1.625 1.126-2.954 2.767-2.999.044-.001.088-.006.133-.006zM10 15a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>;
 const PowerIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" /></svg>;
 const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>;
+const LockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>;
+const UnlockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" /></svg>;
 
 enum SidebarFilter {
   ALL = '全部',
@@ -30,6 +33,12 @@ enum SidebarFilter {
   ITEM = '物品',
   DOCS = '档案'
 }
+
+const GAME_STATE_MAP: Record<GameState, string> = {
+  [GameState.INVESTIGATING]: '调查中',
+  [GameState.SOLVED]: '已结案',
+  [GameState.FAILED]: '调查失败'
+};
 
 const GUIDE_STEPS = [
   {
@@ -43,14 +52,14 @@ const GUIDE_STEPS = [
     content: "在输入框输入关键词检索。系统会检查所有【已解锁】档案。只有当关键词在现有线索中被提及时，或者满足前置逻辑，新的档案才会被解锁。"
   },
   {
+    title: "深度互动",
+    icon: <LockIcon />,
+    content: "某些档案可能被加密或需要证物解锁。遇到【需要密码】时输入线索中找到的代码；遇到【需要物品】时，将相关证物拖入（或点击选择）即可解锁隐藏内容。"
+  },
+  {
     title: "动态证词",
     icon: <ChatIcon />,
     content: "嫌疑人的口供不是一成不变的。当你获得关键证据后，相关人物的档案会【更新】，解锁新的【关联询问】。请留意 NEW DATA 标记。"
-  },
-  {
-    title: "辅助功能",
-    icon: <SparklesIcon />,
-    content: "卡关了吗？点击【AI 分析】获取模糊提示。你也可以利用标签筛选显示，理清复杂的线索关系。"
   },
   {
     title: "最终结案",
@@ -76,7 +85,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
     if (scenario) {
       onLaunch(scenario);
     } else {
-      setError(`ERROR: CASE ID '${caseId}' NOT FOUND`);
+      setError(`错误: 案件编号 '${caseId}' 未找到`);
     }
   };
 
@@ -96,12 +105,12 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           
           <div className="text-center mb-10 md:mb-12">
             <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">DetectiveOS</h1>
-            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">Crime Investigation Terminal</p>
+            <p className="text-police-500 text-xs md:text-sm tracking-[0.3em] uppercase">犯罪调查终端 / Crime Investigation Terminal</p>
           </div>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-xs text-slate-500 mb-2 uppercase tracking-widest"> Manual Override / Case Search</label>
+              <label className="block text-xs text-slate-500 mb-2 uppercase tracking-widest">手动接入 / 案件检索</label>
               <div className="flex flex-col md:flex-row gap-2">
                 <input 
                   type="text" 
@@ -111,14 +120,14 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
                     setError(null);
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && handleConnect(inputId)}
-                  placeholder="ENTER CASE ID..." 
+                  placeholder="输入案件编号..." 
                   className="flex-1 bg-black border border-slate-700 p-4 text-white placeholder-slate-600 focus:border-police-500 outline-none transition-all uppercase"
                 />
                 <button 
                   onClick={() => handleConnect(inputId)}
                   className="bg-police-900 hover:bg-police-800 text-police-100 border border-police-700 px-8 py-4 md:py-0 font-bold transition-colors"
                 >
-                  CONNECT
+                  连接系统
                 </button>
               </div>
               {error && <div className="text-red-500 text-xs mt-2 animate-shake">{error}</div>}
@@ -127,7 +136,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
             <div className="pt-8 border-t border-slate-800">
                <label className="block text-xs text-slate-500 mb-4 uppercase tracking-widest flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                 Detected Signals (Available Cases)
+                 已捕获信号 (可用案件)
                </label>
                <div className="grid gap-3">
                  {AVAILABLE_CASES.map(c => (
@@ -141,7 +150,7 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
                        <div className="text-slate-400 text-xs mt-1 truncate">{c.title}</div>
                      </div>
                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-police-500 shrink-0 pl-2">
-                        ACCESS {'>'}
+                        接入 {'>'}
                      </div>
                    </button>
                  ))}
@@ -150,7 +159,14 @@ const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           </div>
           
           <div className="absolute bottom-2 right-4 text-[10px] text-slate-700">
-             SYS_VER 5.0.2 // ONLINE
+             系统版本 5.0.3 // 在线
+          </div>
+       </div>
+
+       {/* Enhanced Fictional Disclaimer */}
+       <div className="absolute bottom-6 left-0 w-full flex justify-center pointer-events-none z-20 px-4">
+          <div className="bg-orange-500/10 border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-xs md:text-sm font-bold tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.3)] backdrop-blur-sm animate-pulse flex items-center gap-2">
+            <AlertIcon /> 一切故事纯属虚构，请勿模仿
           </div>
        </div>
     </div>
@@ -179,9 +195,14 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   const [activeTabId, setActiveTabId] = useState<string>(INITIAL_RECORD.id);
   const [sidebarFilter, setSidebarFilter] = useState<SidebarFilter>(SidebarFilter.ALL);
   
+  // Interaction State (Locks)
+  const [solvedInteractions, setSolvedInteractions] = useState<string[]>([]);
+  const [interactionInput, setInteractionInput] = useState('');
+  
   // Mobile specific state
   const [mobileViewMode, setMobileViewMode] = useState<'list' | 'reader'>('list');
   const [selectingSlotId, setSelectingSlotId] = useState<string | null>(null); // For Accusation modal
+  const [selectingInteractionId, setSelectingInteractionId] = useState<string | null>(null); // For Item Interaction modal
   
   // Read State Tracking
   const [viewedState, setViewedState] = useState<Record<string, number>>({
@@ -193,7 +214,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
   const [notification, setNotification] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
-  const [chatHistory, setChatHistory] = useState<Message[]>([]);
 
   // Guide State
   const [showGuide, setShowGuide] = useState(false);
@@ -301,6 +321,10 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
            }
         });
       }
+      // Add unlocked interaction content to context
+      if (r.interaction && solvedInteractions.includes(r.id)) {
+        combinedContext += `${r.interaction.unlockedContent} `;
+      }
     });
     combinedContext = combinedContext.toLowerCase();
 
@@ -339,6 +363,55 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     }
   };
 
+  // --- Interaction (Locks) Logic ---
+
+  const handleInteractionSubmit = (record: DatabaseRecord) => {
+     if (!record.interaction) return;
+
+     if (record.interaction.type === 'password') {
+         if (interactionInput.trim() === record.interaction.correctPassword) {
+             setSolvedInteractions(prev => [...prev, record.id]);
+             setNotification(record.interaction.successMessage || "解锁成功");
+             setTimeout(() => setNotification(null), 3000); // Fix: Auto dismiss notification
+             setInteractionInput('');
+         } else {
+             setErrorMsg("密码错误");
+             setTimeout(() => setErrorMsg(null), 2000);
+         }
+     }
+  };
+
+  const handleInteractionDrop = (e: React.DragEvent, targetRecord: DatabaseRecord) => {
+      e.preventDefault();
+      const droppedRecordId = e.dataTransfer.getData("recordId");
+      if (targetRecord.interaction && targetRecord.interaction.type === 'use-item') {
+          if (droppedRecordId === targetRecord.interaction.requiredRecordId) {
+              setSolvedInteractions(prev => [...prev, targetRecord.id]);
+              setNotification(targetRecord.interaction.successMessage || "物品使用成功");
+              setTimeout(() => setNotification(null), 3000); // Fix: Auto dismiss notification
+          } else {
+              setErrorMsg("该物品无效");
+              setTimeout(() => setErrorMsg(null), 2000);
+          }
+      }
+  };
+
+  const handleInteractionSelect = (selectedRecordId: string, targetRecordId: string) => {
+    const targetRecord = RECORDS.find(r => r.id === targetRecordId);
+    if (!targetRecord?.interaction) return;
+
+    if (selectedRecordId === targetRecord.interaction.requiredRecordId) {
+        setSolvedInteractions(prev => [...prev, targetRecord.id]);
+        setNotification(targetRecord.interaction.successMessage || "物品使用成功");
+        setTimeout(() => setNotification(null), 3000); // Fix: Auto dismiss notification
+    } else {
+        setErrorMsg("该物品无效");
+        setTimeout(() => setErrorMsg(null), 2000);
+    }
+    setSelectingInteractionId(null);
+  };
+
+
   // --- Tab Logic ---
 
   const openRecord = (recordId: string) => {
@@ -353,6 +426,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
       }
     }
     setActiveTabId(recordId);
+    setInteractionInput(''); // Reset interaction input
 
     // Mobile Logic: Switch to reader view
     setMobileViewMode('reader');
@@ -367,25 +441,42 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     }
   };
 
-  // --- Hint Logic with Gemini ---
+  // --- Logic-based Hint System (Replaced AI) ---
   
   const generateHint = async () => {
-    setHintMessage("AI 正在分析线索...");
-    
-    // We provide context to the AI about what is unlocked and what is locked but available next
-    const currentContext = `
-      已解锁档案ID: ${unlockedRecordIds.join(', ')}。
-      用户当前正在寻找新的线索。
-    `;
-    
-    const contextData = {
-      records: RECORDS,
-      caseTitle: scenario.caseTitle,
-      initialBrief: INITIAL_RECORD.content
-    };
+    setHintMessage("正在扫描未检索的元数据...");
+    setErrorMsg(null);
 
-    const response = await sendMessageToGemini(chatHistory, currentContext + " 请给出一个模糊的提示，告诉我不剧透的情况下应该去搜索什么关键词，或者注意哪份档案。", contextData);
-    setHintMessage(response);
+    // 1. Logic: Is there a solved record with an UNSOLVED interaction?
+    // Meaning the user is stuck at a password or item check
+    const pendingInteraction = getUnlockedRecords().find(r => r.interaction && !solvedInteractions.includes(r.id));
+    if (pendingInteraction) {
+       setTimeout(() => {
+          setHintMessage(`检测到异常加密节点：档案 [${pendingInteraction.title}]。建议仔细检查其内容或尝试交互。`);
+       }, 800);
+       return;
+    }
+
+    // 2. Logic: Is there a LOCKED record whose PREREQUISITE is UNLOCKED?
+    // Meaning the user has the clue but hasn't searched the keyword
+    const nextSearchable = RECORDS.find(r => 
+        !unlockedRecordIds.includes(r.id) && // Is currently locked
+        r.prerequisiteId && // Has a prerequisite
+        unlockedRecordIds.includes(r.prerequisiteId) // Parent is unlocked
+    );
+
+    if (nextSearchable) {
+       const parentRecord = RECORDS.find(r => r.id === nextSearchable.prerequisiteId);
+       setTimeout(() => {
+          setHintMessage(`分析路径建议：重新阅读 [${parentRecord?.title}]，可能遗漏了某些关键词或地点信息。`);
+       }, 800);
+       return;
+    }
+
+    // 3. Logic: Default / All Clues Found
+    setTimeout(() => {
+       setHintMessage("数据库索引已全部遍历。所有已知线索均已显示，请尝试组合现有证据。");
+    }, 800);
   };
 
   // --- Accusation Logic ---
@@ -518,43 +609,80 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     )
   }
 
-  // Mobile Record Selection Modal for Accusation
+  // Mobile Record Selection Modal for Accusation AND Interactions
   const renderRecordSelectModal = () => {
-    if (!selectingSlotId) return null;
-    const slot = slots.find(s => s.id === selectingSlotId);
-    if (!slot) return null;
+    // Mode 1: Accusation Slot
+    if (selectingSlotId) {
+        const slot = slots.find(s => s.id === selectingSlotId);
+        if (!slot) return null;
+        const validRecords = getUnlockedRecords().filter(r => slot.acceptedTypes.includes(r.type));
 
-    const validRecords = getUnlockedRecords().filter(r => slot.acceptedTypes.includes(r.type));
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-slate-900 border border-police-500/50 w-full max-w-md rounded-lg flex flex-col max-h-[80vh]">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-lg">
+                <h3 className="text-white font-bold">选择: {slot.label}</h3>
+                <button onClick={() => setSelectingSlotId(null)} className="text-slate-500 hover:text-white"><XIcon /></button>
+              </div>
+              <div className="overflow-y-auto p-2 custom-scrollbar flex-1">
+                {validRecords.length === 0 ? (
+                   <div className="text-center py-8 text-slate-500 text-sm">暂无符合该类型的线索</div>
+                ) : (
+                   validRecords.map(r => (
+                     <div 
+                       key={r.id} 
+                       onClick={() => {
+                         assignRecordToSlot(selectingSlotId, r.id);
+                         setSelectingSlotId(null);
+                       }}
+                       className={`p-3 mb-2 rounded border cursor-pointer hover:bg-slate-800 transition-colors ${getRecordColor(r.type, true)}`}
+                     >
+                        <div className="font-bold">{r.title}</div>
+                        <div className="text-xs opacity-70 mt-1">{r.id}</div>
+                     </div>
+                   ))
+                )}
+              </div>
+            </div>
+          </div>
+        );
+    }
+    
+    // Mode 2: Interaction Item Select
+    if (selectingInteractionId) {
+        const targetRecord = RECORDS.find(r => r.id === selectingInteractionId);
+        // Show all items and evidence
+        const validRecords = getUnlockedRecords().filter(r => r.type === RecordType.ITEM || r.type === RecordType.EVIDENCE);
 
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-        <div className="bg-slate-900 border border-police-500/50 w-full max-w-md rounded-lg flex flex-col max-h-[80vh]">
-          <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-lg">
-            <h3 className="text-white font-bold">选择: {slot.label}</h3>
-            <button onClick={() => setSelectingSlotId(null)} className="text-slate-500 hover:text-white"><XIcon /></button>
-          </div>
-          <div className="overflow-y-auto p-2 custom-scrollbar flex-1">
-            {validRecords.length === 0 ? (
-               <div className="text-center py-8 text-slate-500 text-sm">暂无符合该类型的线索</div>
-            ) : (
-               validRecords.map(r => (
-                 <div 
-                   key={r.id} 
-                   onClick={() => {
-                     assignRecordToSlot(selectingSlotId, r.id);
-                     setSelectingSlotId(null);
-                   }}
-                   className={`p-3 mb-2 rounded border cursor-pointer hover:bg-slate-800 transition-colors ${getRecordColor(r.type, true)}`}
-                 >
-                    <div className="font-bold">{r.title}</div>
-                    <div className="text-xs opacity-70 mt-1">{r.id}</div>
-                 </div>
-               ))
-            )}
-          </div>
-        </div>
-      </div>
-    );
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+              <div className="bg-slate-900 border border-police-500/50 w-full max-w-md rounded-lg flex flex-col max-h-[80vh]">
+                <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-lg">
+                  <h3 className="text-white font-bold">选择用于解锁的物品</h3>
+                  <button onClick={() => setSelectingInteractionId(null)} className="text-slate-500 hover:text-white"><XIcon /></button>
+                </div>
+                <div className="overflow-y-auto p-2 custom-scrollbar flex-1">
+                  {validRecords.length === 0 ? (
+                     <div className="text-center py-8 text-slate-500 text-sm">背包空空如也</div>
+                  ) : (
+                     validRecords.map(r => (
+                       <div 
+                         key={r.id} 
+                         onClick={() => handleInteractionSelect(r.id, selectingInteractionId)}
+                         className={`p-3 mb-2 rounded border cursor-pointer hover:bg-slate-800 transition-colors ${getRecordColor(r.type, true)}`}
+                       >
+                          <div className="font-bold">{r.title}</div>
+                          <div className="text-xs opacity-70 mt-1">{r.id}</div>
+                       </div>
+                     ))
+                  )}
+                </div>
+              </div>
+            </div>
+        );
+    }
+
+    return null;
   };
 
   const renderDatabase = () => {
@@ -590,7 +718,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
         {/* Command Bar */}
         <div className="flex flex-col md:flex-row gap-2 md:gap-4 md:items-center bg-slate-900 p-3 md:p-4 rounded-lg border border-slate-700 shadow-md shrink-0">
           <div className="text-police-500 font-mono font-bold whitespace-nowrap text-xs md:text-base flex justify-between items-center">
-             <span>{'>'} SEARCH:</span>
+             <span>{'>'} 检索:</span>
              <button onClick={generateHint} className="md:hidden flex items-center gap-1 px-2 py-1 bg-police-900/30 border border-police-700 rounded text-[10px] text-police-300">
                 <SparklesIcon /> AI
              </button>
@@ -646,8 +774,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
             </div>
 
             <div className="p-2 bg-slate-900/50 border-b border-slate-800 font-bold text-slate-500 text-[10px] tracking-wider flex justify-between shrink-0">
-              <span>INDEX</span>
-              <span>COUNT: {sortedList.length}</span>
+              <span>档案索引</span>
+              <span>数量: {sortedList.length}</span>
             </div>
             
             <div className="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
@@ -657,6 +785,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                   <div 
                     key={record.id}
                     onClick={() => openRecord(record.id)}
+                    draggable
+                    onDragStart={(e) => handleRecordDragStart(e, record.id)}
                     className={`p-3 md:p-2 rounded cursor-pointer border-l-2 transition-all group ${
                       tabs.includes(record.id)
                       ? 'bg-slate-800 ' + getRecordColor(record.type, isUnread)
@@ -675,7 +805,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                        <span className={`text-[9px] px-1 rounded ${getRecordBadgeColor(record.type)}`}>
                           {getRecordDisplayType(record.type)}
                        </span>
-                       {isUnread && <span className="text-[9px] text-police-400 font-mono font-bold tracking-wider">NEW DATA</span>}
+                       {isUnread && <span className="text-[9px] text-police-400 font-mono font-bold tracking-wider">数据更新</span>}
                     </div>
                   </div>
                 );
@@ -741,10 +871,10 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                           {getRecordDisplayType(activeRecord.type)}
                         </span>
                         <span className="bg-slate-950 text-slate-500 text-xs px-2 py-1 rounded border border-slate-800">
-                          ID: {activeRecord.id}
+                          编号: {activeRecord.id}
                         </span>
                         <span className="bg-slate-950 text-police-500 text-xs px-2 py-1 rounded border border-slate-800">
-                          LEVEL: {activeRecord.accessLevel}
+                          密级: {activeRecord.accessLevel}
                         </span>
                       </div>
                     </div>
@@ -759,11 +889,68 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                      ))}
                   </div>
 
+                  {/* Interaction / Lock Section */}
+                  {activeRecord.interaction && (
+                     <div className="mt-8 border border-police-900 bg-slate-950/50 p-6 rounded-lg shadow-inner">
+                        <div className="flex items-center gap-2 mb-4 text-police-400 font-bold">
+                           {solvedInteractions.includes(activeRecord.id) ? <UnlockIcon /> : <LockIcon />}
+                           {solvedInteractions.includes(activeRecord.id) ? "已解锁" : "加密内容"}
+                        </div>
+
+                        {solvedInteractions.includes(activeRecord.id) ? (
+                            <div className="animate-fadeIn prose prose-invert prose-base md:prose-lg font-mono p-4 bg-police-900/10 border-l-4 border-police-500">
+                                {activeRecord.interaction.unlockedContent.split('\n').map((line, i) => (
+                                    <p key={i} className="mb-2 text-police-100">{line}</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                <p className="text-sm text-slate-400 font-mono">{activeRecord.interaction.hintText}</p>
+                                
+                                {activeRecord.interaction.type === 'password' && (
+                                    <div className="flex gap-2 max-w-sm">
+                                        <input 
+                                            type="text" 
+                                            value={interactionInput}
+                                            onChange={(e) => setInteractionInput(e.target.value)}
+                                            className="bg-black border border-slate-700 p-2 text-white font-mono flex-1 outline-none focus:border-police-500"
+                                            placeholder="输入密码"
+                                        />
+                                        <button 
+                                            onClick={() => handleInteractionSubmit(activeRecord)}
+                                            className="bg-police-900 text-white px-4 border border-police-700 hover:bg-police-800"
+                                        >
+                                            解密
+                                        </button>
+                                    </div>
+                                )}
+
+                                {activeRecord.interaction.type === 'use-item' && (
+                                    <div 
+                                        onDrop={(e) => handleInteractionDrop(e, activeRecord)}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onClick={() => setSelectingInteractionId(activeRecord.id)}
+                                        className="border-2 border-dashed border-slate-700 bg-black/50 rounded p-8 text-center cursor-pointer hover:border-police-500 hover:bg-police-900/10 transition-all group"
+                                    >
+                                        <div className="text-slate-500 group-hover:text-police-400 mb-2">
+                                            <DragIcon />
+                                        </div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-widest">
+                                            <span className="hidden md:inline">拖入相关证物以解锁</span>
+                                            <span className="md:hidden">点击选择证物以解锁</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                     </div>
+                  )}
+
                   {/* Dynamic Cross Examination Section */}
                   {activeRecord.crossExamination && (
                     <div className="mt-8 md:mt-12 pt-8 border-t border-slate-800">
                       <h3 className="text-lg md:text-xl font-bold text-slate-400 mb-4 flex items-center gap-2">
-                         <ChatIcon /> 关联询问 / Cross-Examination
+                         <ChatIcon /> 关联询问
                       </h3>
                       <div className="grid gap-4">
                         {activeRecord.crossExamination.map((item, idx) => {
@@ -793,7 +980,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-slate-700">
                   <DatabaseIcon />
-                  <p className="mt-4 font-mono text-sm">READY FOR INPUT</p>
+                  <p className="mt-4 font-mono text-sm">等待指令输入 / 检索中...</p>
                 </div>
               )}
             </div>
@@ -893,7 +1080,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                     }
                   `}
                >
-                   {gameState === GameState.SOLVED ? 'CASE CLOSED' : '提交审查 / SUBMIT'}
+                   {gameState === GameState.SOLVED ? '案件已归档' : '提交审查'}
                </button>
            </div>
         </div>
@@ -915,7 +1102,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                 <span className="text-police-500 text-xs md:text-sm self-end mb-1 tracking-widest opacity-80">OS</span>
              </div>
              <div className="text-[9px] md:text-[10px] text-slate-600 font-mono tracking-[0.2em] uppercase pl-4 md:pl-5 mt-0.5 md:mt-1">
-                CASE ID: {scenario.caseId}
+                案件编号: {scenario.caseId}
              </div>
           </div>
 
@@ -958,7 +1145,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
                   }
               `}>
                   <div className={`w-1.5 h-1.5 rounded-full ${gameState === GameState.SOLVED ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`}></div>
-                  <span className="hidden md:inline">STATUS:</span> {gameState}
+                  <span className="hidden md:inline">状态:</span> {GAME_STATE_MAP[gameState]}
               </div>
 
               <div className="hidden md:block h-8 w-px bg-slate-800/50"></div>
@@ -974,14 +1161,22 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
           </div>
        </header>
 
-       {/* Main Content Area */}
-       <main className="flex-1 overflow-hidden p-4 md:p-6 relative bg-black">
+       {/* Main Content Area - Increased padding-bottom to accommodate disclaimer */}
+       <main className="flex-1 overflow-hidden pt-4 px-4 pb-14 md:pt-6 md:px-6 md:pb-16 relative bg-black">
            {/* Background Pattern */}
            <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
                style={{
                  backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)',
                  backgroundSize: '20px 20px'
                }}>
+           </div>
+
+           {/* Enhanced Fictional Disclaimer (Inside Main for better layering, identical to Launcher) */}
+           {/* Adjusted positioning to fit in the padding area */}
+           <div className="absolute bottom-4 left-0 w-full flex justify-center pointer-events-none z-0 px-4">
+              <div className="bg-orange-500/10 border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-[10px] md:text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.3)] backdrop-blur-sm opacity-80 flex items-center gap-2">
+                <AlertIcon /> 一切故事纯属虚构，请勿模仿
+              </div>
            </div>
           
           <div className="relative z-10 h-full">

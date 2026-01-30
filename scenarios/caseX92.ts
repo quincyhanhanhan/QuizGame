@@ -39,9 +39,10 @@ const RECORDS: DatabaseRecord[] = [
       郭峰的私人办公室，空间开阔，拥有独立的新风系统。
       
       现场勘查重点：
-      1. 办公桌：桌面上有一杯喝了一半的 [威士忌] 和一支 [钢笔]。
-      2. 设施：房间角落有一个隐蔽的 [通风管道] 检修口。
-      3. 门禁记录：案发前一小时内，只有秘书 [林雅] 进入过该房间。
+      1. 办公桌：桌面上有一杯喝了一半的 [威士忌]、一支 [钢笔]，以及一台锁定的 [平板] 电脑。
+      2. 抽屉：半开着，里面似乎有一张 [门禁卡]。
+      3. 设施：房间角落有一个隐蔽的 [通风管道] 检修口。
+      4. 门禁记录：案发前一小时内，只有秘书 [林雅] 进入过该房间。
     `,
   },
   {
@@ -49,19 +50,91 @@ const RECORDS: DatabaseRecord[] = [
     type: RecordType.LOCATION,
     title: '地点：41层 服务器机房',
     tags: ['机房', '设施'],
-    prerequisiteId: 'SYS-001', // Can be found if mentioned by Chen Mo or logic
+    prerequisiteId: 'SYS-001', 
     unlockKeywords: ['41层', '41F', '机房', '服务器', 'server room'],
     accessLevel: 2,
     content: `
       区域描述：
       放置公司核心服务器的恒温机房。噪音巨大，通常无人值守。
       
-      关联记录：
+      人员踪迹：
       CTO [陈默] 声称案发时他正独自在此处维护系统。
       
-      异常发现：
-      查看 [服务器日志] 发现，当晚22:15分，机房的主动降噪系统和温控风扇曾被人为关闭过10分钟。
+      设施检查：
+      机房中央有一台主 [控制台] (Terminal)，屏幕上闪烁着红色的安全警告。
     `,
+  },
+
+  // --- INTERACTIVE ITEMS (NEW) ---
+  {
+    id: 'ITEM_TABLET',
+    type: RecordType.ITEM,
+    title: '物品：郭峰的平板',
+    tags: ['私人物品', '加密'],
+    prerequisiteId: 'LOC_42F',
+    unlockKeywords: ['平板', '电脑', 'tablet', 'ipad'],
+    accessLevel: 1,
+    content: `
+      放在办公桌上的iPad Pro。屏幕亮着，显示系统已锁定。
+      
+      屏幕提示：
+      "请输入4位PIN码。提示：深蓝项目启动日 (MMDD)"
+      (你记得案件简报中提到的案发日期 5月14日 似乎就是这一天)
+    `,
+    interaction: {
+      type: 'password',
+      correctPassword: '0514',
+      hintText: '请输入4位数字 (MMDD)',
+      successMessage: '访问权限已获取，正在加载备忘录...',
+      unlockedContent: `
+      === 备忘录：Project DeepBlue ===
+      状态：试验阶段
+      
+      5月1日：河豚毒素提取顺利，纯度极高。
+      5月10日：陈默那个懦夫又来阻止我，他不懂这是为了人类进化！
+      5月14日：今天就是启动日。没有什么能阻挡我。
+      
+      (获得了新关键词：深蓝项目, DeepBlue, 试验)
+      `
+    }
+  },
+  {
+    id: 'ITEM_ID_CARD',
+    type: RecordType.ITEM,
+    title: '物品：CEO门禁卡',
+    tags: ['钥匙'],
+    prerequisiteId: 'LOC_42F',
+    unlockKeywords: ['门禁卡', 'ID卡', '卡片', 'card'],
+    accessLevel: 1,
+    content: `在抽屉夹层发现的磁卡，印有郭峰的照片和 "LEVEL 5 ACCESS" (最高权限) 字样。`
+  },
+  {
+    id: 'LOC_TERMINAL',
+    type: RecordType.LOCATION, 
+    title: '设施：机房控制台',
+    tags: ['未授权', '锁'],
+    prerequisiteId: 'LOC_41F',
+    unlockKeywords: ['控制台', '终端', 'terminal', 'computer'],
+    accessLevel: 2,
+    content: `
+      机房的主控电脑。屏幕显示 "仅限管理员访问"。
+      需要刷入管理员级别的 [门禁卡] 才能查看系统日志。
+    `,
+    interaction: {
+      type: 'use-item',
+      requiredRecordId: 'ITEM_ID_CARD',
+      hintText: '系统已锁定。请刷入管理员ID卡 (将门禁卡拖入此处)。',
+      successMessage: '身份验证通过。正在导出关键时间段日志...',
+      unlockedContent: `
+        [系统日志 - 2024-05-14]
+        
+        22:15:00 > 警告：冷却风扇系统被手动关闭 (操作员: Root/ChenMo)
+        22:25:00 > 冷却风扇系统重新启动
+        
+        分析：
+        风扇关闭会导致机房噪音骤减，且停止空气对流。这可能是为了掩盖在该时间段内爬行 [通风管道] 产生的声音。
+      `
+    }
   },
 
   // --- PEOPLE ---
@@ -77,7 +150,7 @@ const RECORDS: DatabaseRecord[] = [
       身份：深蓝科技创始人兼CEO。
       
       近期状况：
-      极度痴迷于脑机接口研究，正在秘密推进代号为 [深蓝项目] 的非法人体实验。
+      极度痴迷于脑机接口研究。
       
       人际关系：
       - 与CTO [陈默] 因技术理念不合，关系已破裂。
@@ -222,7 +295,7 @@ const RECORDS: DatabaseRecord[] = [
     type: RecordType.DOC,
     title: '文件：深蓝项目 (Project DeepBlue)',
     tags: ['机密', '动机'],
-    prerequisiteId: 'P_GUO',
+    prerequisiteId: 'ITEM_TABLET', // Unlocked via Tablet content keywords primarily
     unlockKeywords: ['深蓝项目', '深蓝计划', 'Project DeepBlue', 'DeepBlue'],
     accessLevel: 3,
     content: `
@@ -250,23 +323,6 @@ const RECORDS: DatabaseRecord[] = [
       来源追踪：
       公司采购记录显示，郭峰以上市研发名义，在一个月前批准购入了一批高纯度河豚毒素用于 [深蓝项目]。
       这批毒素存放在41层机房的保险柜里，只有郭峰和陈默有钥匙。
-    `,
-  },
-  {
-    id: 'DOC_LOG',
-    type: RecordType.DOC,
-    title: '文件：服务器日志',
-    tags: ['日志'],
-    prerequisiteId: 'LOC_41F',
-    unlockKeywords: ['服务器日志', '日志', 'log'],
-    accessLevel: 2,
-    content: `
-      [系统警告]
-      2024-05-14 22:15:00 > 冷却风扇系统被手动关闭 (操作员: Root/ChenMo)
-      2024-05-14 22:25:00 > 冷却风扇系统重新启动
-      
-      分析：
-      风扇关闭会导致机房噪音骤减，且停止空气对流。这可能是为了掩盖在该时间段内爬行 [通风管道] 产生的声音。
     `,
   }
 ];

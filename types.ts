@@ -20,6 +20,24 @@ export interface CrossExamination {
   content: string;         // The testimony
 }
 
+// New Interface for Interactions (Locks/Puzzles)
+export interface Interaction {
+  type: 'password' | 'use-item';
+  
+  // For 'use-item': The ID of the record that must be dragged here
+  requiredRecordId?: string; 
+  
+  // For 'password': The correct string answer
+  correctPassword?: string;
+  
+  // UI Text
+  hintText: string;       // e.g., "该文件已加密，请输入密码" or "需要相关证物解锁"
+  successMessage: string; // e.g., "解密成功"
+  
+  // Content to reveal after success
+  unlockedContent: string; 
+}
+
 export interface DatabaseRecord {
   id: string;
   type: RecordType;
@@ -36,6 +54,9 @@ export interface DatabaseRecord {
   
   // Dynamic Testimony logic
   crossExamination?: CrossExamination[];
+
+  // Advanced Interactions (New)
+  interaction?: Interaction;
 }
 
 export interface Message {
