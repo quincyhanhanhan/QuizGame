@@ -147,7 +147,7 @@ const RECORDS: DatabaseRecord[] = [
     type: RecordType.EASTEREGG,
     title: '彩蛋：5525',
     tags: ['粉丝专属'],
-    prerequisiteId: 'P_WANG', // Mentioned in P_WANG
+    prerequisiteId: 'SYS-TUTORIAL', // Mentioned in P_WANG
     unlockKeywords: ['5525', '5526','5525+1'],
     accessLevel: 1,
     content: `
