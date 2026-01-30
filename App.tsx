@@ -27,6 +27,7 @@ const LockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const UnlockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" /></svg>;
 const FingerPrintIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518 9.001 9.001 0 003.375 16.334 1 1 0 101.164-1.631 7.001 7.001 0 01-2.607-15.22zM10.56 1.107a1 1 0 10-1.12 1.895A7.002 7.002 0 0117.9 10a7.002 7.002 0 01-14.803.957 1 1 0 00-1.984.254A9.002 9.002 0 0019.9 10a9.002 9.002 0 00-9.34-8.892zm-2.484 5.37a1 1 0 101.528 1.288 3.001 3.001 0 014.288 3.75 1 1 0 101.815.836 5.001 5.001 0 00-7.63-5.874z" clipRule="evenodd" /></svg>;
 const PuzzleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg>;
+const CaseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" /><path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" /></svg>;
 
 // Guide Modal Component
 const GuideModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -794,6 +795,60 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     });
   };
 
+  const renderAccusation = () => (
+      <div className="flex flex-col h-full gap-4 items-center justify-center p-4 animate-fadeIn overflow-y-auto">
+        <h2 className="text-3xl font-bold text-white mb-2 font-mono uppercase tracking-widest text-center">结案提交通道</h2>
+        <p className="text-slate-400 mb-8 max-w-md text-center">请构建完整的证据链。拖拽或点击下方的槽位来填充线索。</p>
+        
+        {/* Slot Container */}
+        <div className="flex flex-col md:flex-row gap-6 mb-10 w-full max-w-4xl justify-center">
+          {slots.map(slot => {
+            const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
+            return (
+              <div 
+                key={slot.id}
+                onDrop={(e) => handleSlotDrop(e, slot.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => handleSlotClick(slot.id)}
+                className={`flex-1 border-2 border-dashed rounded-lg p-6 min-h-[200px] flex flex-col items-center justify-center text-center transition-all cursor-pointer relative group ${filledRecord ? 'border-police-500 bg-police-900/20' : 'border-slate-700 hover:border-slate-500 hover:bg-slate-800/50'}`}
+              >
+                  <div className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{slot.label}</div>
+                  <div className="text-sm text-slate-400 mb-4 h-10">{slot.question}</div>
+                  
+                  {filledRecord ? (
+                    <div className="w-full">
+                       <div className={`p-3 rounded text-sm font-bold truncate mb-2 ${getRecordBadgeColor(filledRecord.type)}`}>{filledRecord.title}</div>
+                       <button onClick={(e) => clearSlot(e, slot.id)} className="text-xs text-red-400 hover:text-white underline">清除</button>
+                    </div>
+                  ) : (
+                    <div className="text-slate-600 group-hover:text-slate-400">
+                       <DragIcon />
+                       <span className="text-xs mt-2 block">点击或拖入档案</span>
+                    </div>
+                  )}
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Result Message */}
+        {resultMessage && (
+           <div className={`mb-6 px-6 py-3 rounded font-bold text-center border ${gameState === GameState.SOLVED ? 'bg-green-900/50 border-green-500 text-green-400' : 'bg-red-900/50 border-red-500 text-red-400'}`}>
+              {resultMessage}
+           </div>
+        )}
+
+        <button 
+          onClick={handleSubmitAccusation}
+          disabled={gameState === GameState.SOLVED}
+          className={`px-10 py-4 font-bold text-lg rounded tracking-widest uppercase transition-all shadow-lg ${gameState === GameState.SOLVED ? 'bg-green-600 text-white cursor-default' : 'bg-police-600 text-white hover:bg-police-500 hover:scale-105'}`}
+        >
+          {gameState === GameState.SOLVED ? '案件已侦破' : '确认结案'}
+        </button>
+
+      </div>
+  );
+
   const renderDatabase = () => {
     const activeRecord = RECORDS.find(r => r.id === activeTabId);
 
@@ -1112,7 +1167,58 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     );
   };
 
-  return renderDatabase();
+  return (
+    <div className="flex flex-col h-screen bg-black p-2 md:p-4 text-slate-300 font-mono overflow-hidden">
+        {/* Persistent System Header */}
+        <header className="flex justify-between items-center mb-2 md:mb-4 p-2 md:p-3 border-b border-slate-800 bg-slate-900/80 backdrop-blur rounded-lg shrink-0">
+            <div className="flex items-center gap-4 min-w-0">
+                <button 
+                  onClick={onExit}
+                  className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded border border-transparent hover:border-red-900 transition-all flex items-center gap-2 text-xs md:text-sm font-bold uppercase tracking-widest"
+                >
+                    <PowerIcon />
+                    <span className="hidden md:inline">断开连接</span>
+                </button>
+                <div className="w-px h-6 bg-slate-700 hidden md:block"></div>
+                <div className="min-w-0">
+                    <div className="text-xs text-slate-500 uppercase tracking-widest hidden md:block">Current Case</div>
+                    <div className="text-white font-bold truncate text-sm md:text-base">{SYSTEM_NAME}: {scenario.caseTitle}</div>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+                 <div className={`text-xs px-3 py-1 rounded font-bold hidden md:block ${isAllCluesCollected ? 'text-green-400 bg-green-900/20 border border-green-800' : 'text-slate-500 bg-slate-800/50'}`}>
+                    {isAllCluesCollected ? '全线索已收集' : '调查进行中'}
+                 </div>
+                 <button 
+                    onClick={() => setCurrentPage(prev => prev === Page.DATABASE ? Page.ACCUSATION : Page.DATABASE)}
+                    className={`
+                       px-4 py-2 rounded text-xs md:text-sm font-bold uppercase tracking-wider flex items-center gap-2 transition-all
+                       ${currentPage === Page.ACCUSATION 
+                          ? 'bg-slate-700 text-white hover:bg-slate-600' 
+                          : 'bg-police-600 text-white hover:bg-police-500 shadow-[0_0_15px_rgba(14,165,233,0.3)]'
+                       }
+                    `}
+                 >
+                    {currentPage === Page.ACCUSATION ? (
+                       <>
+                         <BackIcon /> 返回数据库
+                       </>
+                    ) : (
+                       <>
+                         <CaseIcon /> 结案提交
+                       </>
+                    )}
+                 </button>
+            </div>
+        </header>
+
+        {/* MAIN CONTENT AREA */}
+        <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden bg-slate-950/50 border border-slate-800/50">
+            {currentPage === Page.ACCUSATION ? renderAccusation() : renderDatabase()}
+        </div>
+    </div>
+  );
 };
 
 export const App: React.FC = () => {
