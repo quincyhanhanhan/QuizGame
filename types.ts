@@ -5,7 +5,8 @@ export enum RecordType {
   ITEM = '物品', // Yellow (Interactable objects)
   LOCATION = '地点', // Green
   DOC = '文件档案', // Blue
-  AUTOPSY = '法医报告' // Gray
+  AUTOPSY = '法医报告', // Gray
+  EASTEREGG = '隐藏彩蛋' // Pink/Special
 }
 
 export enum GameState {

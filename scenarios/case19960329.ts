@@ -36,7 +36,7 @@ const RECORDS: DatabaseRecord[] = [
     unlockKeywords: ['练团室', 'breakroom', 'room'],
     accessLevel: 1,
     content: `
-      一个由漫画堆成的小录音室。
+      一个由 [漫画] 堆成的小录音室，墙角放着几把 [吉他]。
       
       冰箱门开着。
       桌子上有一个空的 [咸酥鸡盒子]。
@@ -100,10 +100,10 @@ const RECORDS: DatabaseRecord[] = [
     unlockKeywords: ['阿信', '主唱', 'ashin'],
     accessLevel: 1,
     content: `
-      正在角落里拼乐高的主唱。
+      正在角落里拼 [乐高] 的主唱。
       嘴角似乎有一点油渍。
       
-      身边放着：[手电筒]。
+      随身携带：[手电筒]。
     `,
     crossExamination: [
       {
@@ -139,6 +139,22 @@ const RECORDS: DatabaseRecord[] = [
       购买时间是昨天。
       这意味着阿信今天中午可能根本没吃午饭，他处于极度饥饿状态。
     `,
+  },
+
+  // --- 隐藏彩蛋 (Easter Eggs) ---
+  {
+    id: 'EGG_5525',
+    type: RecordType.EASTEREGG,
+    title: '彩蛋：5525',
+    tags: ['粉丝专属'],
+    prerequisiteId: 'P_WANG', // Mentioned in P_WANG
+    unlockKeywords: ['5525', '5526','5525+1'],
+    accessLevel: 1,
+    content: `
+      少了你，我们就不是，五月天！
+      
+      (系统提示：恭喜发现隐藏彩蛋！这是一个与案件无关的冷知识。)
+    `,
   }
 ];
 
@@ -150,12 +166,12 @@ export const case19960329: CaseScenario = {
   initialRecord: INITIAL_RECORD,
   records: RECORDS,
   solution: {
-    culpritId: 'P_WANG', // 王大锤
+    culpritId: 'P_WANG', // 阿信
     evidenceId: 'ITEM_BOX', // 盒子（上有指纹）
     motiveId: 'DOC_RECEIPT', // 饥饿/减肥
     validEvidenceIds: ['ITEM_BOX'], 
     validMotiveIds: ['DOC_RECEIPT'],
-    explanation: "阿信因为节食减肥（动机：小票显示只吃沙拉），处于极度饥饿状态。他趁练团室无人偷吃了玛莎的咸酥鸡，并试图擦除痕迹。但他没想到利用随身的[紫光灯]可以检测到他在[盒子]上残留的指纹（铁证）。嘴角的糖霜也是佐证。",
+    explanation: "阿信因为节食减肥（动机：小票显示只吃沙拉），处于极度饥饿状态。他趁练团室无人偷吃了玛莎的咸酥鸡，并试图擦除痕迹。但他没想到利用随身的[手电筒]可以检测到他在[盒子]上残留的指纹（铁证）。嘴角的油渍也是佐证。",
     confession: `
 (阿信放下了乐高，瘫倒在地上)
 

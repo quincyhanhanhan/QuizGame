@@ -14,7 +14,7 @@ import { AVAILABLE_CASES, getScenario } from './scenarios/registry';
 
 // --- Icons ---
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>;
-const DatabaseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>;
+const DatabaseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011-1h2a1 1 0 011-1h2a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>;
 const AlertIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
 const SparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>;
 const DragIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" /></svg>;
@@ -124,7 +124,7 @@ const GUIDE_STEPS = [
   {
     title: "深度互动",
     icon: <LockIcon />,
-    content: "某些档案可能被加密或需要证物解锁。遇到【需要密码】时输入线索中找到的代码；遇到【需要物品】时，将相关证物拖入（或点击选择）即可解锁隐藏内容。"
+    content: "档案库中带有【锁图标】的内容表示已被加密。你需要根据提示输入密码，或者【拖拽相关证物】到虚线框区域进行解锁。（注：某些关卡包含特殊的粉色【彩蛋词条】，虽然对破案无用，但作为粉丝福利请务必收集！）"
   },
   {
     title: "动态证词",
@@ -351,6 +351,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
       case RecordType.ITEM: colorClass = `text-yellow-400 border-yellow-900/50 bg-yellow-900/${isUnread ? '20' : '5'}`; break;
       case RecordType.DOC: colorClass = `text-blue-400 border-blue-900/50 bg-blue-900/${isUnread ? '20' : '5'}`; break;
       case RecordType.AUTOPSY: colorClass = `text-slate-400 border-slate-700 bg-slate-800/${isUnread ? '50' : '20'}`; break;
+      case RecordType.EASTEREGG: colorClass = `text-pink-400 border-pink-900/50 bg-pink-900/${isUnread ? '20' : '5'}`; break;
       default: colorClass = `text-slate-400 border-slate-800`;
     }
     return `${colorClass} ${baseOpacity} ${isUnread ? 'shadow-[0_0_10px_rgba(255,255,255,0.05)]' : ''}`;
@@ -363,6 +364,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
       case RecordType.EVIDENCE: 
       case RecordType.ITEM: return 'bg-yellow-500 text-black';
       case RecordType.DOC: return 'bg-blue-500 text-black';
+      case RecordType.EASTEREGG: return 'bg-pink-500 text-black';
       default: return 'bg-slate-500 text-white';
     }
   };
@@ -1110,202 +1112,22 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ scenario, onExit }) => {
     );
   };
 
-  const renderAccusation = () => {
-      const unlockedRecords = getUnlockedRecords();
-
-      return (
-          <div className="flex flex-col md:flex-row h-full bg-slate-900 overflow-hidden relative">
-              <button 
-                  onClick={() => setCurrentPage(Page.DATABASE)}
-                  className="absolute top-4 left-4 flex items-center gap-2 text-slate-400 hover:text-white z-50 bg-slate-900/50 px-2 py-1 rounded"
-              >
-                  <BackIcon /> 返回
-              </button>
-
-              {/* Main Accusation Area (Left/Top) */}
-              <div className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto">
-                  <div className="text-center mb-6 md:mb-10 pt-10 md:pt-0">
-                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-                          <AlertIcon /> 结案通道
-                      </h2>
-                      <p className="text-slate-500 font-mono text-sm">从右侧证据库中拖入线索以构建证据链</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl mx-auto mb-8">
-                      {slots.map(slot => {
-                          const filledRecord = RECORDS.find(r => r.id === slot.filledRecordId);
-                          return (
-                              <div 
-                                  key={slot.id}
-                                  className="bg-black/50 border border-slate-700 p-6 rounded-lg flex flex-col items-center text-center relative group min-h-[160px] transition-colors"
-                                  onDrop={(e) => handleSlotDrop(e, slot.id)}
-                                  onDragOver={(e) => e.preventDefault()}
-                                  onClick={() => handleSlotClick(slot.id)}
-                              >
-                                  <div className="text-police-500 font-bold mb-4 uppercase tracking-widest text-sm">{slot.label}</div>
-                                  
-                                  {filledRecord ? (
-                                      <div className="w-full">
-                                          <div className={`p-3 rounded border mb-2 ${getRecordColor(filledRecord.type, true)}`}>
-                                              <div className="font-bold truncate text-sm">{filledRecord.title}</div>
-                                          </div>
-                                          <button 
-                                              onClick={(e) => clearSlot(e, slot.id)}
-                                              className="text-slate-500 hover:text-red-500 text-xs flex items-center justify-center gap-1 mx-auto"
-                                          >
-                                              <XIcon /> 移除
-                                          </button>
-                                      </div>
-                                  ) : (
-                                      <div className="flex-1 flex flex-col items-center justify-center text-slate-600 border-2 border-dashed border-slate-800 rounded w-full p-4 group-hover:border-police-500/50 transition-colors">
-                                          <div className="mb-2"><DragIcon /></div>
-                                          <div className="text-xs">{slot.question}</div>
-                                          <div className="text-[10px] mt-2 opacity-50 md:hidden block">点击选择</div>
-                                      </div>
-                                  )}
-                              </div>
-                          );
-                      })}
-                  </div>
-
-                  <div className="flex flex-col items-center gap-4 mt-auto pb-4">
-                      <button 
-                          onClick={handleSubmitAccusation}
-                          className="bg-red-900/80 hover:bg-red-800 text-white px-10 py-3 rounded border border-red-700 font-bold tracking-widest text-lg shadow-[0_0_20px_rgba(153,27,27,0.4)] transition-all"
-                      >
-                          提交审查
-                      </button>
-                      
-                      {resultMessage && (
-                          <div className={`text-sm font-bold font-mono p-2 px-4 rounded ${gameState === GameState.SOLVED ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-red-900/30 text-red-400 border border-red-800'}`}>
-                              {resultMessage}
-                          </div>
-                      )}
-                  </div>
-              </div>
-
-              {/* Evidence Locker (Right/Bottom) */}
-              <div className="w-full md:w-80 bg-slate-950 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shrink-0 h-1/3 md:h-auto z-10 shadow-2xl">
-                 <div className="p-3 border-b border-slate-800 bg-black/50 font-bold text-slate-400 text-xs tracking-widest uppercase flex items-center justify-between">
-                    <span>证据库 // Evidence Locker</span>
-                    <span className="text-police-500">{unlockedRecords.length}</span>
-                 </div>
-                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                     <div className="grid grid-cols-1 gap-2">
-                        {unlockedRecords.map(r => (
-                            <div 
-                                key={r.id}
-                                draggable
-                                onDragStart={(e) => handleRecordDragStart(e, r.id)}
-                                className={`p-2 rounded border cursor-grab active:cursor-grabbing text-xs flex flex-col gap-1 hover:bg-slate-900 transition-colors ${getRecordColor(r.type, true)}`}
-                            >
-                                <div className="font-bold truncate">{r.title}</div>
-                                <div className="flex justify-between items-center opacity-70">
-                                    <span className="font-mono">{r.id}</span>
-                                    <span className={`px-1 rounded text-[9px] ${getRecordBadgeColor(r.type)}`}>{getRecordDisplayType(r.type)}</span>
-                                </div>
-                            </div>
-                        ))}
-                     </div>
-                 </div>
-              </div>
-          </div>
-      )
-  };
-
-  return (
-    <div className="h-screen w-screen bg-black text-slate-300 font-sans overflow-hidden flex flex-col">
-        {/* Header - Only show if not in Accusation mode to save space, or simplify */}
-        <div className={`h-12 md:h-14 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-20 ${currentPage === Page.ACCUSATION ? 'hidden' : ''}`}>
-            <div className="flex items-center gap-4">
-                <div className="font-bold text-police-500 tracking-wider text-sm md:text-base flex items-center gap-2">
-                    <div className="w-2 h-2 bg-police-500 rounded-full animate-pulse"></div>
-                    {SYSTEM_NAME}
-                </div>
-                <div className="h-4 w-px bg-slate-800"></div>
-                <div className="text-xs text-slate-500 font-mono hidden md:block">
-                    CASE: {scenario.caseId} // STATUS: 
-                    {gameState === GameState.SOLVED ? (
-                       <span className="text-green-500 font-bold ml-1">已结案 (CASE CLOSED)</span>
-                    ) : isAllCluesCollected ? (
-                       <span className="text-green-400 font-bold ml-1 animate-pulse">线索已收集完成 (CLUES COMPLETE)</span>
-                    ) : (
-                       <span className="text-slate-400 ml-1">{GAME_STATE_MAP[gameState]} ({Math.round((unlockedRecordIds.length / RECORDS.length) * 100)}%)</span>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2 md:gap-4">
-                <button 
-                    onClick={() => setShowGuide(true)}
-                    className="p-2 text-slate-400 hover:text-white transition-colors"
-                    title="操作指引"
-                >
-                    <HelpIcon />
-                </button>
-                
-                <button 
-                    onClick={() => setCurrentPage(prev => prev === Page.DATABASE ? Page.ACCUSATION : Page.DATABASE)}
-                    className={`
-                        px-3 py-1.5 rounded text-xs font-bold border transition-all flex items-center gap-2
-                        ${currentPage === Page.ACCUSATION 
-                            ? 'bg-slate-800 text-white border-slate-600' 
-                            : 'bg-red-900/20 text-red-400 border-red-900/50 hover:bg-red-900/40 hover:border-red-500'
-                        }
-                    `}
-                >
-                    <AlertIcon />
-                    {currentPage === Page.ACCUSATION ? '返回档案' : '申请结案'}
-                </button>
-
-                <div className="h-4 w-px bg-slate-800"></div>
-                
-                <button 
-                    onClick={onExit}
-                    className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-500 transition-colors"
-                >
-                    <PowerIcon />
-                    <span className="hidden md:inline">断开连接</span>
-                </button>
-            </div>
-        </div>
-
-        {/* Main Area */}
-        <div className="flex-1 overflow-hidden relative">
-            {currentPage === Page.DATABASE && renderDatabase()}
-            {currentPage === Page.ACCUSATION && renderAccusation()}
-        </div>
-
-        {/* Modals */}
-        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
-        {renderConfessionModal()}
-        {renderRecordSelectModal()}
-    </div>
-  );
+  return renderDatabase();
 };
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const [activeScenario, setActiveScenario] = useState<CaseScenario | null>(null);
 
   return (
-    <>
-      {!activeScenario ? (
-        <Launcher onLaunch={setActiveScenario} />
-      ) : (
+    <div className="text-white">
+      {activeScenario ? (
         <GameInterface 
           scenario={activeScenario} 
           onExit={() => setActiveScenario(null)} 
         />
+      ) : (
+        <Launcher onLaunch={setActiveScenario} />
       )}
-      
-      {/* Global Disclaimer: Moved here to persist across all screens */}
-      <div className="fixed bottom-6 left-0 w-full flex justify-center pointer-events-none z-[100] px-4">
-          <div className="bg-orange-500/10 border border-orange-500/50 text-orange-500 px-4 py-2 rounded text-xs md:text-sm font-bold tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.3)] backdrop-blur-sm animate-pulse flex items-center gap-2">
-            <AlertIcon /> 一切故事纯属虚构，请勿模仿
-          </div>
-       </div>
-    </>
+    </div>
   );
 };
-
-export default App;
